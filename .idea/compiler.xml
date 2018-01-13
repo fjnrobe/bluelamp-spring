@@ -23,10 +23,12 @@
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
         <module name="bluelamp" />
+        <module name="bluelamp-spring" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="bluelamp" target="1.6" />
+      <module name="bluelamp-spring" target="1.6" />
     </bytecodeTargetLevel>
   </component>
 </project>
