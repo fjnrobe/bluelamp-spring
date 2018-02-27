@@ -1,7 +1,5 @@
 package main.java.models;
 
-import main.java.dtos.AnnotationDto;
-import main.java.dtos.TagDto;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
@@ -22,11 +20,11 @@ public class Diagram {
     private String pageTitle;
     private String pageDescription;
 
-    @OneToOne
+    @OneToOne()
     @JoinColumn(name = "artifact_id")
     private Artifact artifact;
 
-    @ManyToOne
+    @ManyToOne()
     @JoinColumn(name = "library_id",
             foreignKey = @ForeignKey(name = "LIBRARY_ID_FK")
     )
@@ -51,7 +49,7 @@ public class Diagram {
     @OneToMany(mappedBy = "diagram",
             cascade = CascadeType.ALL,
             orphanRemoval = true)
-    private List<ShapeRelationship> relationships = new ArrayList<ShapeRelationship>();
+    private List<Relationship> relationships = new ArrayList<Relationship>();
 
     public String getId() {
         return id;
@@ -123,6 +121,105 @@ public class Diagram {
         }
     }
 
+    public void addAnnotation(Annotation newAnnotation) {
+
+        boolean exists = false;
+        for (Annotation annotation : this.getAnnotations())
+        {
+            if (annotation.getId().equals(newAnnotation.getId()))
+            {
+                exists = true;
+                break;
+            }
+        }
+        if (!exists) {
+            this.annotations.add(newAnnotation);
+            newAnnotation.setDiagram(this);
+        }
+    }
+
+    public void removeAnnotation(Annotation newAnnotation) {
+        boolean exists = false;
+        for (Annotation annotation : this.getAnnotations())
+        {
+            if (annotation.getId().equals(newAnnotation.getId()))
+            {
+                exists = true;
+                break;
+            }
+        }
+        if (exists) {
+            tags.remove(newAnnotation);
+            newAnnotation.setDiagram(null);
+        }
+    }
+
+    public void addShape(Shape newShape) {
+
+        boolean exists = false;
+        for (Shape shape : this.getShapes())
+        {
+            if (shape.getId().equals(newShape.getId()))
+            {
+                exists = true;
+                break;
+            }
+        }
+        if (!exists) {
+            this.shapes.add(newShape);
+            newShape.setDiagram(this);
+        }
+    }
+
+    public void removeShape(Shape newShape) {
+        boolean exists = false;
+        for (Shape shape : this.getShapes())
+        {
+            if (shape.getId().equals(newShape.getId()))
+            {
+                exists = true;
+                break;
+            }
+        }
+        if (exists) {
+            this.shapes.remove(newShape);
+            newShape.setDiagram(null);
+        }
+    }
+
+    public void addRelationship(Relationship newRelationship) {
+
+        boolean exists = false;
+        for (Relationship relationship : this.getRelationships())
+        {
+            if (relationship.getId().equals(newRelationship.getId()))
+            {
+                exists = true;
+                break;
+            }
+        }
+        if (!exists) {
+            this.relationships.add(newRelationship);
+            newRelationship.setDiagram(this);
+        }
+    }
+
+    public void removeRelationship(Relationship newRelationship) {
+        boolean exists = false;
+        for (Relationship relationship : this.getRelationships())
+        {
+            if (relationship.getId().equals(newRelationship.getId()))
+            {
+                exists = true;
+                break;
+            }
+        }
+        if (exists) {
+            this.shapes.remove(newRelationship);
+            newRelationship.setDiagram(null);
+        }
+    }
+
     public List<Annotation> getAnnotations() {
         return annotations;
     }
@@ -151,11 +248,11 @@ public class Diagram {
         this.shapes = shapes;
     }
 
-    public List<ShapeRelationship> getRelationships() {
+    public List<Relationship> getRelationships() {
         return relationships;
     }
 
-    public void setRelationships(List<ShapeRelationship> relationships) {
+    public void setRelationships(List<Relationship> relationships) {
         this.relationships = relationships;
     }
 }

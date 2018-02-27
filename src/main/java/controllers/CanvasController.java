@@ -1,6 +1,7 @@
 package main.java.controllers;
 
 import main.java.common.URLConstants;
+import main.java.dtos.ArtifactDto;
 import main.java.dtos.ErrorDto;
 import main.java.dtos.PageDto;
 import main.java.dtos.UiPageDto;
@@ -27,9 +28,5 @@ public class CanvasController {
 
     Logger logger = Logger.getLogger(CanvasController.class);
 
-    @GetMapping(URLConstants.CANVAS_LOADPAGE)
-    public UiPageDto getPageById(@PathVariable(value = "pageId") String pageId)
-    {
-        return this.diagramManager.getPageById(pageId);
-    }
+
 }

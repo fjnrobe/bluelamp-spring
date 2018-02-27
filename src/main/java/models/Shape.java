@@ -5,28 +5,34 @@ import main.java.dtos.ArtifactDto;
 import main.java.dtos.TagDto;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 /**
  * Created by Robertson_Laptop on 1/13/2018.
  */
-@Entity(name = "Shape")
+@Entity
+@Table(name = "shape")
+@EntityListeners(AuditingEntityListener.class)  //enables auto maintenance of create/update dates
+
 public class Shape {
 
     @Id
     private String id;
 
+    @ManyToOne
     @JoinColumn(name = "diagram_id",
             foreignKey = @ForeignKey(name = "diagram_id_fk")
     )
     private Diagram diagram;
 
-    private int sequenceNumber;
-    @OneToOne
-    @JoinColumn(name = "artifact_id")
+    private String sequenceNumber;
+    @ManyToOne
+    @JoinColumn(name = "artifact_id", foreignKey =  @ForeignKey(name="artifact_id"))
     private Artifact artifact;
     private String shapeType;
     private int radius;
@@ -39,12 +45,12 @@ public class Shape {
     @OneToMany(mappedBy = "shape",
             cascade = CascadeType.ALL,
             orphanRemoval = true)
-    private List<Tag> tags;
+    private List<Tag> tags = new ArrayList<Tag>();
 
     @OneToMany(mappedBy = "shape",
             cascade = CascadeType.ALL,
             orphanRemoval = true)
-    private List<Annotation> annotations;
+    private List<Annotation> annotations = new ArrayList<Annotation>();
 
     @Column(nullable = false, updatable = false)
     @Temporal(TemporalType.TIMESTAMP)
@@ -56,6 +62,11 @@ public class Shape {
     @LastModifiedDate
     private Date updatedAt;
 
+    public Shape()
+    {
+
+    }
+
     public String getId() {
         return id;
     }
@@ -64,11 +75,11 @@ public class Shape {
         this.id = id;
     }
 
-    public int getSequenceNumber() {
+    public String getSequenceNumber() {
         return sequenceNumber;
     }
 
-    public void setSequenceNumber(int sequenceNumber) {
+    public void setSequenceNumber(String sequenceNumber) {
         this.sequenceNumber = sequenceNumber;
     }
 
@@ -215,5 +226,38 @@ public class Shape {
 
     public void setDiagram(Diagram diagram) {
         this.diagram = diagram;
+    }
+
+    public void addAnnotation(Annotation newAnnotation) {
+
+        boolean exists = false;
+        for (Annotation annotation : this.getAnnotations())
+        {
+            if (annotation.getId().equals(newAnnotation.getId()))
+            {
+                exists = true;
+                break;
+            }
+        }
+        if (!exists) {
+            this.annotations.add(newAnnotation);
+            newAnnotation.setShape(this);
+        }
+    }
+
+    public void removeAnnotation(Annotation newAnnotation) {
+        boolean exists = false;
+        for (Annotation annotation : this.getAnnotations())
+        {
+            if (annotation.getId().equals(newAnnotation.getId()))
+            {
+                exists = true;
+                break;
+            }
+        }
+        if (exists) {
+            annotations.remove(newAnnotation);
+            newAnnotation.setDiagram(null);
+        }
     }
 }

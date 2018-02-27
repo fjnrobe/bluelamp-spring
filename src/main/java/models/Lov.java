@@ -14,7 +14,7 @@ import java.util.Date;
 @Entity
 @Table(name = "lov")
 @EntityListeners(AuditingEntityListener.class)  //enables auto maintenance of create/update dates
-public class Lov implements Persistable {
+public class Lov {
 
     private String id;
     private String lovTable;
@@ -41,13 +41,6 @@ public class Lov implements Persistable {
         return id;
     }
 
-    @Override
-    public boolean isNew() {
-        return false;
-    }
-
-
-    public void setNew(boolean isNew) {};
     public void setId(String id) {
         this.id = id;
     }

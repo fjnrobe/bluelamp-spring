@@ -23,4 +23,11 @@ public class AnnotationDto {
     public void setAnnotationText(String annotationText) {
         this.annotationText = annotationText;
     }
+
+    public AnnotationDto()
+    {
+
+    }
+
+
 }

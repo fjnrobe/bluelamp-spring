@@ -20,7 +20,8 @@ public class ArtifactDto {
     private Lov documentType;
     private String libraryId;
 
-    private List<TagDto> tags = new ArrayList<TagDto>();
+    private List<TagDto> tagDtos = new ArrayList<TagDto>();
+    private List<AnnotationDto> annotationDtos = new ArrayList<AnnotationDto>();
 
     public ArtifactDto()
     {
@@ -59,13 +60,6 @@ public class ArtifactDto {
         this.detailedText = detailedText;
     }
 
-    public List<TagDto> getTags() {
-        return tags;
-    }
-
-    public void setTags(List<TagDto> tags) {
-        this.tags = tags;
-    }
 
     public String getLibraryId() {
         return libraryId;
@@ -81,5 +75,21 @@ public class ArtifactDto {
 
     public void setDocumentType(Lov documentType) {
         this.documentType = documentType;
+    }
+
+    public List<AnnotationDto> getAnnotationDtos() {
+        return annotationDtos;
+    }
+
+    public void setAnnotationDtos(List<AnnotationDto> annotationDtos) {
+        this.annotationDtos = annotationDtos;
+    }
+
+    public List<TagDto> getTagDtos() {
+        return tagDtos;
+    }
+
+    public void setTagDtos(List<TagDto> tagDtos) {
+        this.tagDtos = tagDtos;
     }
 }

@@ -1,7 +1,6 @@
 package main.java.managers;
 
 import main.java.dtos.*;
-import main.java.mappers.ArtifactMapper;
 import main.java.mappers.DiagramMapper;
 import main.java.mappers.ShapeMapper;
 import main.java.mappers.ShapeRelationshipMapper;
@@ -22,22 +21,54 @@ public class DiagramManager
     private final DiagramRepository diagramRepository;
     private final LibraryLevelRepository libraryLevelRepository;
     private final LovRepository lovRepository;
+    private final ArtifactRepository artifactRepository;
 
     public DiagramManager(DiagramRepository diagramRepository,
                           LibraryLevelRepository libraryLevelRepository,
-                          LovRepository lovRepository)
+                          LovRepository lovRepository,
+                          ArtifactRepository artifactRepository)
     {
         this.diagramRepository = diagramRepository;
         this.libraryLevelRepository = libraryLevelRepository;
         this.lovRepository = lovRepository;
+        this.artifactRepository = artifactRepository;
     }
 
     public List<ErrorDto> validateAndSaveDiagram(PageDto pageDto) {
 
-        List<ErrorDto> errors = this.validatePage(pageDto);
+        List<ErrorDto> errors = this.validateDiagram(pageDto);
 
         if (errors.size() == 0) {
-            this.saveDiagram(pageDto);
+            UiPageDto uiPageDto = new UiPageDto();
+            uiPageDto.setPageDto(pageDto);
+            this.savePage(uiPageDto);
+        }
+
+        return errors;
+    }
+
+    public List<ErrorDto> validateAndSaveDrilldownPage(NewDrilldownDto newDrilldownDto) {
+
+        List<ErrorDto> errors = this.validatePage(newDrilldownDto.getNewUiPageDto());
+
+        if (errors.size() == 0) {
+            this.savePage(newDrilldownDto.getNewUiPageDto());
+
+            errors.addAll(this.validatePage(newDrilldownDto.getCurrentUiPageDto()));
+            if (errors.size() == 0) {
+                this.savePage(newDrilldownDto.getCurrentUiPageDto());
+            }
+        }
+
+        return errors;
+    }
+
+    public List<ErrorDto> validateAndSavePage(UiPageDto uiPageDto) {
+
+        List<ErrorDto> errors = this.validatePage(uiPageDto);
+
+        if (errors.size() == 0) {
+            this.savePage(uiPageDto);
         }
 
         return errors;
@@ -58,7 +89,14 @@ public class DiagramManager
         return pageDtos;
     }
 
-    private List<ErrorDto> validatePage(PageDto pageDto) {
+    private List<ErrorDto> validatePage(UiPageDto uiPageDto)
+    {
+        List<ErrorDto> errors = this.validateDiagram(uiPageDto.getPageDto());
+
+        return errors;
+    }
+
+    private List<ErrorDto> validateDiagram(PageDto pageDto) {
         List<ErrorDto> errors = new ArrayList<ErrorDto>();
 
         //make sure all required fields are present
@@ -81,12 +119,25 @@ public class DiagramManager
             errors.add(new ErrorDto("the page description is required"));
         }
 
+        //if no errors - check that the diagram name is not a duplicate
+        if (errors.size() == 0)
+        {
+            Diagram existingDiagram = this.diagramRepository.findByPageTitleIgnoreCase(pageDto.getPageTitle());
+
+            if ((existingDiagram != null) && (!existingDiagram.getId().equals(pageDto.getId())))
+            {
+                errors.add(new ErrorDto("There is already a diagram with this title. Duplicate titles are not allowed"));
+            }
+        }
+
         return errors;
 
     }
 
-    private void saveDiagram(PageDto pageDto)
+    private void savePage(UiPageDto uiPageDto)
     {
+        PageDto pageDto = uiPageDto.getPageDto();
+
         Diagram diagram = this.diagramRepository.findById(pageDto.getId());
 
         if (diagram != null) {
@@ -106,19 +157,119 @@ public class DiagramManager
             diagram.setLibraryLevel(libraryEntry);
         }
 
-        //add all the incoming tags
-        for (TagDto tagDto : pageDto.getTags())
+        if (pageDto.getArtifactId() != null)
         {
-            Lov tagLov = this.lovRepository.findById(tagDto.getLov().getId());
+            Artifact artifact = this.artifactRepository.findById(pageDto.getArtifactId());
+            if (artifact != null)
+            {
+                diagram.setArtifact(artifact);
+            }
+        }
+
+        //add all the incoming tags
+        for (TagDto tagDto : pageDto.getTagDtos())
+        {
+            Lov tagLov = this.lovRepository.findById(tagDto.getLovDto().getId());
 
             Tag tag = new Tag();
             tag.setId(tagDto.getId());
             tag.setTagValue(tagDto.getTagValue());
-            tag.setDiagram(diagram);
             tag.setLovTagType(tagLov);
 
-            //note - if the tag already exists, it won't be added again
             diagram.addTag(tag);
+        }
+
+        //add all the incoming annotations
+        for (AnnotationDto annotationDto : pageDto.getAnnotationDtos())
+        {
+            Annotation annotation = new Annotation();
+            annotation.setId(annotationDto.getId());
+            annotation.setAnnotationText(annotationDto.getAnnotationText());
+
+            diagram.addAnnotation(annotation);
+        }
+
+        //add all the shapes
+        for (ShapeDto shapeDto : uiPageDto.getShapeDtos())
+        {
+            Shape shape = new Shape();
+            shape.setId(shapeDto.getId());
+            shape.setShapeType(shapeDto.getShapeType());
+            shape.setShapeText(shapeDto.getShapeText());
+            shape.setDrillDownPageId(shapeDto.getDrillDownPageId());
+            shape.setCenterX(shapeDto.getCenterX());
+            shape.setCenterY(shapeDto.getCenterY());
+            shape.setHeight(shapeDto.getHeight());
+            shape.setRadius(shapeDto.getRadius());
+            shape.setSequenceNumber(shapeDto.getSequenceNumber());
+            shape.setWidth(shapeDto.getWidth());
+
+            //add all the incoming tags
+            for (TagDto tagDto : shapeDto.getTagDtos())
+            {
+                Lov tagLov = this.lovRepository.findById(tagDto.getLovDto().getId());
+
+                Tag tag = new Tag();
+                tag.setId(tagDto.getId());
+                tag.setTagValue(tagDto.getTagValue());
+                tag.setLovTagType(tagLov);
+
+                shape.addTag(tag);
+            }
+
+            //add all the incoming annotations
+            for (AnnotationDto annotationDto : shapeDto.getAnnotationDtos())
+            {
+                Annotation annotation = new Annotation();
+                annotation.setId(annotationDto.getId());
+                annotation.setAnnotationText(annotationDto.getAnnotationText());
+
+                shape.addAnnotation(annotation);
+            }
+
+            diagram.addShape(shape);
+        }
+
+        //add all the relationships
+        for (ShapeRelationshipDto shapeRelationshipDto : uiPageDto.getShapeRelationshipDtos())
+        {
+
+            Relationship relationship = new Relationship();
+            relationship.setId(shapeRelationshipDto.getId());
+            relationship.setRelationshipType(shapeRelationshipDto.getRelationshipType());
+            relationship.setEndXLocation(shapeRelationshipDto.getEndXLocation());
+            relationship.setEndYLocation(shapeRelationshipDto.getEndYLocation());
+            relationship.setFromShapeId(shapeRelationshipDto.getFromShapeId());
+            relationship.setRelationshipGraphicId(shapeRelationshipDto.getRelationshipGraphicId());
+            relationship.setShapeText(shapeRelationshipDto.getShapeText());
+            relationship.setStartXLocation(shapeRelationshipDto.getStartXLocation());
+            relationship.setStartYLocation(shapeRelationshipDto.getStartYLocation());
+            relationship.setToShapeId(shapeRelationshipDto.getToShapeId());
+
+            //add all the incoming tags
+            for (TagDto tagDto : shapeRelationshipDto.getTagDtos())
+            {
+                Lov tagLov = this.lovRepository.findById(tagDto.getLovDto().getId());
+
+                Tag tag = new Tag();
+                tag.setId(tagDto.getId());
+                tag.setTagValue(tagDto.getTagValue());
+                tag.setLovTagType(tagLov);
+
+                relationship.addTag(tag);
+            }
+
+            //add all the incoming annotations
+            for (AnnotationDto annotationDto : shapeRelationshipDto.getAnnotationDtos())
+            {
+                Annotation annotation = new Annotation();
+                annotation.setId(annotationDto.getId());
+                annotation.setAnnotationText(annotationDto.getAnnotationText());
+
+                relationship.addAnnotation(annotation);
+            }
+
+            diagram.addRelationship(relationship);
         }
 
         this.diagramRepository.save(diagram);
@@ -138,9 +289,9 @@ public class DiagramManager
             uiPageDto.getShapeDtos().add(ShapeMapper.mapModelToDto(shape));
         }
 
-        for (ShapeRelationship shapeRelationship : diagram.getRelationships())
+        for (Relationship relationship : diagram.getRelationships())
         {
-            uiPageDto.getShapeRelationshipDtos().add(ShapeRelationshipMapper.mapModelToDto(shapeRelationship));
+            uiPageDto.getShapeRelationshipDtos().add(ShapeRelationshipMapper.mapModelToDto(relationship));
         }
 
         return uiPageDto;

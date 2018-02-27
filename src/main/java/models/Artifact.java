@@ -23,13 +23,13 @@ public class Artifact {
     private String abbreviation;
     private String detailedText;
 
-    @ManyToOne
+    @ManyToOne()
     @JoinColumn(name = "lov_document_type_id",
             foreignKey = @ForeignKey(name = "lov_document_type_id_FK")
     )
     private Lov lovDocumentType;
 
-    @ManyToOne
+    @ManyToOne()
     @JoinColumn(name = "library_id",
             foreignKey = @ForeignKey(name = "LIBRARY_ID_FK")
     )
@@ -40,6 +40,10 @@ public class Artifact {
                 orphanRemoval = true)
     private List<Tag> tags = new ArrayList<Tag>();
 
+    @OneToMany(mappedBy = "artifact",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
+    private List<Annotation> annotations = new ArrayList<Annotation>();
 
     public Artifact()
     {
@@ -135,4 +139,44 @@ public class Artifact {
         this.lovDocumentType = lovDocumentType;
     }
 
+    public List<Annotation> getAnnotations() {
+        return annotations;
+    }
+
+    public void setAnnotations(List<Annotation> annotations) {
+        this.annotations = annotations;
+    }
+
+    public void addAnnotation(Annotation newAnnotation) {
+
+        boolean exists = false;
+        for (Annotation annotation : this.getAnnotations())
+        {
+            if (annotation.getId().equals(newAnnotation.getId()))
+            {
+                exists = true;
+                break;
+            }
+        }
+        if (!exists) {
+            this.annotations.add(newAnnotation);
+            newAnnotation.setArtifact(this);
+        }
+    }
+
+    public void removeAnnotation(Annotation newAnnotation) {
+        boolean exists = false;
+        for (Annotation annotation : this.getAnnotations())
+        {
+            if (annotation.getId().equals(newAnnotation.getId()))
+            {
+                exists = true;
+                break;
+            }
+        }
+        if (exists) {
+            annotations.remove(newAnnotation);
+            newAnnotation.setArtifact(null);
+        }
+    }
 }

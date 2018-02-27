@@ -1,5 +1,6 @@
 package main.java.dtos;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -10,15 +11,15 @@ public class ShapeRelationshipDto {
     private String id;
     private String fromShapeId;
     private String toShapeId;
-    private LovDto lovRelationshipType;
+    private String relationshipType;
     private int startXLocation;
     private int startYLocation;
     private int endXLocation;
     private int endYLocation;
     private String relationshipGraphicId;
     private String shapeText;
-    private List<TagDto> tagDtos;
-    private List<AnnotationDto> annotationDtos;
+    private List<TagDto> tagDtos = new ArrayList<TagDto>();
+    private List<AnnotationDto> annotationDtos = new ArrayList<AnnotationDto>();
 
     public String getId() {
         return id;
@@ -42,14 +43,6 @@ public class ShapeRelationshipDto {
 
     public void setToShapeId(String toShapeId) {
         this.toShapeId = toShapeId;
-    }
-
-    public LovDto getLovRelationshipType() {
-        return lovRelationshipType;
-    }
-
-    public void setLovRelationshipType(LovDto lovRelationshipType) {
-        this.lovRelationshipType = lovRelationshipType;
     }
 
     public int getStartXLocation() {
@@ -114,5 +107,13 @@ public class ShapeRelationshipDto {
 
     public void setAnnotationDtos(List<AnnotationDto> annotationDtos) {
         this.annotationDtos = annotationDtos;
+    }
+
+    public String getRelationshipType() {
+        return relationshipType;
+    }
+
+    public void setRelationshipType(String relationshipType) {
+        this.relationshipType = relationshipType;
     }
 }

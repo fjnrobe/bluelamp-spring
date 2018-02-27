@@ -40,4 +40,48 @@ public class Annotation {
     @JoinColumn(name="shape_id", foreignKey = @ForeignKey(name="shape_id_fk"))
     private Shape shape;
 
+    @ManyToOne
+    @JoinColumn(name="relationship_id", foreignKey = @ForeignKey(name="relationship_id_fk"))
+    private Relationship relationship;
+
+    @ManyToOne
+    @JoinColumn(name="artifact_id", foreignKey = @ForeignKey(name="artifact_id_fk"))
+    private Artifact artifact;
+
+    public Annotation()
+    {
+
+    }
+
+    public Diagram getDiagram() {
+        return diagram;
+    }
+
+    public void setDiagram(Diagram diagram) {
+        this.diagram = diagram;
+    }
+
+    public Shape getShape() {
+        return shape;
+    }
+
+    public void setShape(Shape shape) {
+        this.shape = shape;
+    }
+
+    public Relationship getRelationship() {
+        return relationship;
+    }
+
+    public void setRelationship(Relationship relationship) {
+        this.relationship = relationship;
+    }
+
+    public Artifact getArtifact() {
+        return artifact;
+    }
+
+    public void setArtifact(Artifact artifact) {
+        this.artifact = artifact;
+    }
 }

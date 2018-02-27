@@ -2,6 +2,7 @@ package main.java.mappers;
 
 import main.java.dtos.ArtifactDto;
 import main.java.dtos.TagDto;
+import main.java.models.Annotation;
 import main.java.models.Artifact;
 import main.java.models.Tag;
 
@@ -22,7 +23,12 @@ public class ArtifactMapper {
 
         for (Tag tag : artifact.getTags())
         {
-            artifactDto.getTags().add(TagMapper.mapModelToDto(tag));
+            artifactDto.getTagDtos().add(TagMapper.mapModelToDto(tag));
+        }
+
+        for (Annotation annotation : artifact.getAnnotations())
+        {
+            artifactDto.getAnnotationDtos().add(AnnotationMapper.mapModelToDto(annotation)) ;
         }
 
         return artifactDto;

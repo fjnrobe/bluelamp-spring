@@ -12,35 +12,26 @@
       <script src="/scripts/vendor/jquery.contextMenu.js"></script>
       <script src="/scripts/vendor/jquery-ui.js"></script>
       <script src="/scripts/vendor/angular.min.js"></script>
+
       <script src="/scripts/js/libraryCatalog.js"></script>
-      <script src="/scripts/services/libraryService.js"></script>
       <script src="/scripts/controllers/baseController.js"></script>
+      <script src="/scripts/services/tagService.js"></script>
+      <script src="/scripts/services/lovService.js"></script>
+      <script src="/scripts/services/libraryService.js"></script>
+      <script src="/scripts/services/artifactService.js"></script>
       <script src="/scripts/controllers/libraryCatalogController.js"></script>
 
       <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
       <link rel="stylesheet" href="/scripts/vendor/jquery.contextMenu.css" />
       <link rel="stylesheet" href="/scripts/vendor/jquery-ui.css" />
+      <link rel="stylesheet" href="/css/bluelamp.css" />
 
   </head>
   <body>
 	<div ng-app="bluelamp" ng-controller="libraryCatalogController" id="libraryCatalogController">
-        <div class="header">
-            <ul class="nav nav-tabs">
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Home</a>
-                </li>
-                <li class="nav-item">
-                <a class="nav-link active" href="#">Library Catelog</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Artifacts</a>
-                </li>    
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Diagrams</a>
-                </li>                          
-            </ul>     
-        </div>
-        <div class="container-fluid">
+        <#include "/includes/menu.ftl"/>
+
+        <div class="container-fluid" ng-cloak>
             <div class="panel-group">
                 <div class="panel panel-primary">
                     <div class="panel-heading">
@@ -84,44 +75,39 @@
         </div>
 
         <!-- this is the popup for adding a new library entry -->
-        <div id="newLibrary" title = "{{libraryChangeType}} Library Entry">
-            <form>
-                <fieldset class="fieldSetStyle">
-                    <table class="tblformatOnly">
-                        <tr>
-                            <td>
-                                <label for="fldLibraryDescription">Description:</label>
-                            </td>
-                            <td>
-                                <input type="text"
-                                       id="fldLibraryDescription"
-                                       name="fldLibraryDescription"
-                                       value="{{libraryDescription}}"
-                                       ng-model="libraryDescription"
-                                       maxlength="50"
-                                       size="50">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <label for="fldLibraryAbbrev">Abbreviation:</label>
-                            </td>
-                            <td>
-                                <input type="text"
-                                       id="fldLibraryAbbrev"
-                                       name="fldLibraryAbbrev"
-                                       value="{{libraryAbbrev}}"
-                                       ng-model="libraryAbbrev"
-                                       maxlength="25"
-                                       size="25">
-                            </td>
-                        </tr>
-                    </table>
-                </fieldset>
-            </form>
-        </div>
+        <form id="newLibrary"
+              title = "Edit Library Entry"
+              class="form-horizontal" novalidate ng-cloak>
+            <div  class="form-group form-group-sm">
+                <label  class="control-label col-md-2"
+                        for="fldLibraryDescription">Description:
+                </label>
+                <div class="col-md-4">
+                    <input clss="form-control form-control-md"
+                            type="text"
+                           id="fldLibraryDescription"
+                           name="fldLibraryDescription"
+                           value="{{libraryDescription}}"
+                           ng-model="libraryDescription"
+                           maxlength="50"
+                           size="50">
+                </div>
+            </div>
+            <div  class="form-group form-group-sm">
+                <label class="control-label col-md-2"
+                       for="fldLibraryAbbrev">Abbreviation:
+                </label>
+                <div class="col-md-4">
+                    <input clss="form-control form-control-md"
+                           type="text"
+                           id="fldLibraryAbbrev"
+                           name="fldLibraryAbbrev"
+                           value="{{libraryAbbrev}}"
+                           ng-model="libraryAbbrev"
+                           maxlength="25"
+                           size="25">
+                </div>
+            </div>
+        </form>
     </div>
-
-
-
   </body>

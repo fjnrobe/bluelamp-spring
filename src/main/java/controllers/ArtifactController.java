@@ -42,6 +42,23 @@ public class ArtifactController {
         return this.artifactManager.getArtifactById(artifactId);
     }
 
+    @DeleteMapping(URLConstants.ARTIFACTS_DELETE)
+    public ResponseEntity<List<ErrorDto>> deleteArtifact(@PathVariable(value = "artifactId") String artifactId)
+    {
+        logger.info("called artifacts - DELETE");
+
+        List<ErrorDto> errors = this.artifactManager.validateAndDeleteArtifact(artifactId);
+
+        if (!errors.isEmpty())
+        {
+            return new ResponseEntity(errors, HttpStatus.NOT_ACCEPTABLE);
+        }
+        else
+        {
+            return new ResponseEntity(HttpStatus.CREATED);
+        }
+    }
+
     @PostMapping(URLConstants.ARTIFACTS_POST)
     public ResponseEntity<List<ErrorDto>> saveArtifact(@Valid @RequestBody
                                                                    ArtifactDto artifactDto)

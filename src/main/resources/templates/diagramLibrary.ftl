@@ -12,12 +12,15 @@
     <script src="/scripts/vendor/jquery.contextMenu.js"></script>
     <script src="/scripts/vendor/jquery-ui.js"></script>
     <script src="/scripts/vendor/angular.min.js"></script>
+    <script src="/scripts/controllers/baseController.js"></script>
     <script src="/scripts/js/diagramLibrary.js"></script>
+    <script src="/scripts/controllers/baseController.js"></script>
     <script src="/scripts/services/libraryService.js"></script>
+    <script src="/scripts/services/artifactService.js"></script>
     <script src="/scripts/services/diagramService.js"></script>
     <script src="/scripts/services/tagService.js"></script>
     <script src="/scripts/services/lovService.js"></script>
-    <script src="/scripts/controllers/baseController.js"></script>
+
     <script src="/scripts/controllers/diagramLibraryController.js"></script>
 
     <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
@@ -27,25 +30,11 @@
     <link rel="stylesheet" href="/css/bluelamp.css" />
 
 </head>
-<body>
+<body >
 <div ng-app="bluelamp" ng-controller="diagramLibraryController" id="diagramLibraryController">
-    <div class="header">
-        <ul class="nav nav-tabs">
-            <li class="nav-item">
-                <a class="nav-link" href="#">Home</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Library Catelog</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Artifacts</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link active" href="#">Diagrams</a>
-            </li>
-        </ul>
-    </div>
-    <div class="container-fluid">
+    <#include "/includes/menu.ftl">
+
+    <div class="container-fluid" ng-cloak>
         <div class="panel-group">
             <div class="panel panel-primary">
                 <div class="panel-heading">
@@ -58,24 +47,27 @@
                             <ul>
                                 <li class="libraryHeader1 libraryItem"
                                     ng-repeat="library1 in libraryList"
+                                    id="{{library1.id}}"
                                     ng-click="showHideDiagrams(this)"
                                     data-library-id="{{library1.id}}"
                                     data-library-level="{{library1.level}}">
-                                    {{library1.description}} [{{library1.subLibraryList.length || library1.subLibraryCount}}]
+                                    {{library1.description}} [{{library1.subLibraryList.length || library1.subLibraryCount}}] (diagrams: {{library1.diagramCount}})
                                     <ul class="libraryHeader2" ng-hide="!library1.expanded" >
                                         <li   class="libraryItem"
                                               ng-repeat="library2 in library1.subLibraryList"
+                                              id="{{library2.id}}"
                                               ng-click="showHideDiagrams(this)"
                                               data-library-id="{{library2.id}}"
                                               data-library-level="{{library2.level}}">
-                                            {{library2.description}} [{{library2.subLibraryList.length || library2.subLibraryCount}}]
+                                            {{library2.description}} [{{library2.subLibraryList.length || library2.subLibraryCount}}] (diagrams: {{library2.diagramCount}})
                                             <ul class="libraryHeader3" ng-hide="!library2.expanded">
                                                 <li class="libraryItem"
                                                     ng-repeat="library3 in library2.subLibraryList"
+                                                    id="{{library3.id}}"
                                                     ng-click="showHideDiagrams(this)"
                                                     data-library-id="{{library3.id}}"
                                                     data-library-level="{{library3.level}}">
-                                                    {{library3.description}} [{{library3.subLibraryList.length || library3.subLibraryCount}}]
+                                                    {{library3.description}} [{{library3.subLibraryList.length || library3.subLibraryCount}}] (diagrams: {{library3.diagramCount}})
                                                 </li>
                                             </ul>
                                         </li>
@@ -93,26 +85,24 @@
                 </div>
                 <div class="panel-body">
                     <div class="well">
-                        <div class="dataTables_scrollHeadInner">
-                            <table>
-                                <tr>
-                                    <th style="width:20%">
-                                        Diagram Title
-                                    </th>
-                                    <th style="width:80%">
-                                        Diagram Description
-                                    </th>
-                                </tr>
-                                <tr ng-repeat="diagram in diagramList">
-                                    <td>
-                                        <a href="*">{{diagram.pageTitle}}</a>
-                                    </td>
-                                    <td>
-                                        {{diagram.pageDescription}}
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
+                        <table class="table table-sm table-hover">
+                            <tr>
+                                <th style="width:40%">
+                                    Diagram Title
+                                </th>
+                                <th style="width:60%">
+                                    Diagram Description
+                                </th>
+                            </tr>
+                            <tr ng-repeat="diagram in diagramList">
+                                <td style="width:40%">
+                                    <a href="/canvas/page/{{diagram.id}}">{{diagram.pageTitle}}</a>
+                                </td>
+                                <td style="width:60%">
+                                    {{diagram.pageDescription}}
+                                </td>
+                            </tr>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -120,45 +110,15 @@
     </div>
 
     <!-- this is the popup to create a new diagram -->
-    <form id="frmNewDiagram" title = "Add New Diagram"
-          class="form-horizontal" novalidate>
+    <#include "/includes/addEditProperties.ftl">
 
-        <div class="panel panel-danger" ng-show="errors.length > 0">
-            <div class="panel-heading">The Following Errors Occurred</div>
-            <div class="panel-body">
-                <p ng-repeat="row in errors">{{row.errorMessage}}</p>
-            </div>
-        </div>
 
-        <div   class="form-group form-group-sm">
-            <label class="control-label col-md-4" for="fldPageTitle">Page Title: </label>
-
-            <div class="col-md-8">
-                <input 	class="form-control form-control-md"
-                          required
-                          type="text"
-                          id="fldPageTitle"
-                          name="fldPageTitle"
-                          value="{{pageTitle}}"
-                          ng-model="pageTitle"
-                          maxlength="50"
-                          size="50">
-            </div>
-        </div>
-        <div   class="form-group form-group-sm">
-            <label class="control-label col-md-4" for="fldPageDescription">Description: </label>
-
-            <div class="col-md-8">
-               <textarea	id="fldPageDescription"
-                            ng-model="pageDescription"
-                            name="fldPageDescription" rows="5" columns="50">{{pageDescription}}</textarea>
-            </div>
-        </div>
-
-    </form>
+    <!-- this is the popup for displaying the artifact info
+    when selected from the edit popup -->
+    <#include "/includes/artifactInfo.ftl"/>
 
     <!-- this is the popup for searching for a diagram -->
-    <div id="searchDiagram" title = "Diagram Search">
+    <div id="searchDiagram" title = "Diagram Search" ng-cloak>
 
         <table class="tblformatOnly">
             <tr>

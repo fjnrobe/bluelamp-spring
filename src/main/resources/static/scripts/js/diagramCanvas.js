@@ -18,8 +18,6 @@
 	  var defaultDiamondWidth = 150;
 	  var defaultDiamondHeight = 100;
 	  var lastActiveShape = null; //when a shape relinquishes the pen (releasePen), the shape is held here.
-	 
-	  var pageCache = [];	//for testing only holds each 'saved' page
 
 	//connect two shapes based on provided start/end vectors, using a specified connection type
 	//the two shapes are a jsgl.group objects extended with properties/helper/eventhandler 
@@ -241,9 +239,9 @@
 	
 	function ShapeDto(shapeType)
 	{		
-		this.shapeId = -1;
+		this.id = -1;
 		this.sequenceNumber = -1;
-		this.referenceArtifacts = {};
+		this.referenceArtifactDto = {};
 		this.shapeType = shapeType;
 		this.drillDownPageId = -1;		
 		this.radius = -1;
@@ -252,22 +250,23 @@
 		this.centerX = -1;
 		this.centerY = -1;
 		this.shapeText = '';
-		this.tags = [];
-		this.annotations = [];
+		this.tagDtos = [];
+		this.annotationDtos = [];
 	  };
 	  
 	function shapeRelationshipDto () {		
-		this.relationshipId = -1;
+		this.id = -1;
 		this.fromShapeId = -1;
 		this.toShapeId = -1;
-		this.lovRelationshipType = '';
+		this.lovRelationshipType = {};
 		this.startXLocation = -1;
 		this.startYLocation = -1;
 		this.endXLocation = -1;
 		this.endYLocation = -1;
 		this.relationshipGraphicId = -1;
-		this.tags = [];
-		this.annotations = [];
+		this.shapeText = "",
+		this.tagDtos = [];
+		this.annotationDtos = [];
 	};
 
 	
@@ -358,9 +357,9 @@
 	  
 	function DiamondProperties(shape, nextSeqNbr, pWidth, pHeight)
 	{
+		ShapeProperties.call(this,shape,nextSeqNbr);
 		this.width = pWidth;
-		this.height = pHeight;
-		ShapeProperties.call(this,shape,nextSeqNbr)
+   		this.height = pHeight;
 	}
 	
 	DiamondProperties.prototype = Object.create ( ShapeProperties.prototype);
@@ -2811,11 +2810,7 @@
 			console.log('endX ' + this.lastActiveShape.properties.endX + ', end y ' + this.lastActiveShape.properties.endY);
 		}
 		
-		console.log('page cache:');
-		for (var idx = 0; idx < pageCache.length; idx++)
-		{
-			console.log(pageCache[idx]);
-		}
+
 	};
 	
 	function logUiPageDto(dto)
@@ -2830,7 +2825,7 @@
 	     createNewShape('line', myPanel, pLineType);		 
 		 
 	  };
-	  
+
     function startGroupSelect()
 	{
 		newShape = myPanel.createPolygon();			
@@ -2890,54 +2885,77 @@
 	//or a promote operation
 	function handleNewPageDiagram()
 	{
+        getController().savePageEdits();
+
+		var newUiPageDto =  JSON.parse(JSON.stringify(getController().currentPage));
+
+        //connect the new page to the currently selected shape
+        var currentShape = getCurrentlySelectedShape();
+        currentShape.properties.drillDownPageId = newUiPageDto.pageDto.id;
+        currentShape.properties.drillDownPageTitle = newUiPageDto.pageDto.pageTitle;
+
+    	getController().currentPage = JSON.parse(JSON.stringify(getController().pageBeingEdited));
+
+        var currentPageUiPageDto = preparePageForPersist();
+
+        //the current and new page are saved together
+        getController().saveDrillDownPage(currentPageUiPageDto, newUiPageDto);
+
+	}
+
+    //this method is called when the user clicks save on the 'new page diagram' - the new page can be created for a drill down operation
+	//or a promote operation
+	function handleExistingPageDrillDown()
+	{
+	    //the save of the current page, and the new page are done asynchronously. the save
+	    //logic in the controller will navigate to the new page once the pagesSaved = 2
+
+	    getController().pagesSaved = 0;
 		if (getController().newPageAction == "promote")
 		{
 			var linkages = validGroupSelectionForPromotion();
-			if (!linkages.validLinkages) 
-			{	
+			if (!linkages.validLinkages)
+			{
 				alert ('Invalid Group Selection for Promotion. At most, there may be 1 entry and 1 exit connection');
 				return;
 			}
 		}
 
-		newPageDiagram.dialog("close");
+        //swap out the new page in the currentPage variable
+        //and put the current page back
+        getController().savePageEdits();
+		var newUiPageDto =  JSON.parse(JSON.stringify(getController().currentPage));
+		getController().currentPage = JSON.parse(JSON.stringify(getController().pageBeingEdited));
 
-		//first save the page (all we have is the page title/description at this point)
-		var newUiPageDto =  getController().createNewPageDto();
-		newUiPageDto.pageDto.pageTitle = getController().pageTitle;
-		newUiPageDto.pageDto.pageDescription = getController().pageDescription;
-		
 		//don't save the current page if we are promoting - the promote logic will do that
 		if (getController().newPageAction == "drilldown")
-		{			
+		{
+    			newUiPageDto.predecessorPageDtos.push({id: getController().currentPage.pageDto.id,
+            												pageTitle: getController().currentPage.pageDto.pageTitle});
 				var currentShape = getCurrentlySelectedShape();
-				currentShape.properties.drillDownPageId = newUiPageDto.pageDto.pageId;
+				currentShape.properties.drillDownPageId = newUiPageDto.pageDto.id;
 				currentShape.properties.drillDownPageTitle = newUiPageDto.pageDto.pageTitle;
-
+                //save the current page - but don't navigate anywhere
 				savePage();
 		}
 
-		
-		if (getController().newPageAction == "drilldown")
-		{			
-			newUiPageDto.predecessorPages.push({pageId: getController().currentPage.pageDto.pageId,
-												pageTitle: getController().currentPage.pageDto.pageTitle});
-		}
+        //and save the new page and then navigate to it in case of drilldown
+        var nextPageId = null;
+        if (getController().newPageAction == "drilldown")
+        {
+            nextPageId = newUiPageDto.pageDto.id;
+        }
 
 		newUiPageDto = persistPage(newUiPageDto);
-		
-		if (getController().newPageAction == "drilldown")
-		{
-			loadPage(newUiPageDto.pageDto.pageId);								
-		}		
-		else
-		{
-				promoteGroupSelectToNewPage(newUiPageDto, linkages);
 
-				//remove the group select
-				lastActiveShape.shapeHelper.releaseShapes();
-				myPanel.removeElement(lastActiveShape);		
-		}
+        if (getController().newPageAction == "promote")
+        {
+            promoteGroupSelectToNewPage(newUiPageDto, linkages);
+
+                    //remove the group select
+                    lastActiveShape.shapeHelper.releaseShapes();
+                    myPanel.removeElement(lastActiveShape);
+        }
 	}
 
 	function validGroupSelectionForPromotion()
@@ -3214,12 +3232,7 @@
 	  {
 		myPanel.clear();
 		pageShapes = [];
-		// uiPageDto =  JSON.parse(JSON.stringify(pageDtoTemplate));
-		// if (pFromShapeId != null)
-		// {
-		// 	uiPageDto.sourceShapeId = pFromShapeId;
-		// }
-		// getController().setCurrentPage({});
+
 	  }
 	
 	//invoked with the user choses to navigate to a predecessor page 
@@ -3236,35 +3249,30 @@
 		//invoke server to get the uiPageDto for the incoming page
 		clearPage(null);
 
-		var bfound = false;
-		for (var idx = 0; idx < pageCache.length; idx++)
-		{
-			if (pageCache[idx].pageDto.pageId == pageId)
-			{
-				uiPageDto = pageCache[idx];
-				bfound = true;
-				break;
-			}
-		}
-		
-		if (!bfound)
-		{
-			alert ('page ' ||pageId || ' not found');
-			return;
-		}
+        var uiPageDto = null;
+        if (pageId != null)
+        {
+            //note: the loadPage will invoke populatePage once the http call completes
+    		getController().loadPage(pageId);
+        }
+        else
+        {
+            uiPageDto = getController().currentPage;
+            populatePage(uiPageDto);
+        }
+    }
 
-		getController().setCurrentPage(uiPageDto);
+    function populatePage(uiPageDto)
+    {
 
-		//set the page title and description
-		
-		for (var shapeIdx = 0; shapeIdx < uiPageDto.shapes.length; shapeIdx++)
+		for (var shapeIdx = 0; shapeIdx < uiPageDto.shapeDtos.length; shapeIdx++)
 		{
-			createShape(myPanel, uiPageDto.shapes[shapeIdx]);
+			createShape(myPanel, uiPageDto.shapeDtos[shapeIdx]);
 		}
 		
-		for (var connectIdx = 0; connectIdx < uiPageDto.connections.length; connectIdx++)
+		for (var connectIdx = 0; connectIdx < uiPageDto.shapeRelationshipDtos.length; connectIdx++)
 		{
-			createConnection(myPanel, uiPageDto.connections[connectIdx]);
+			createConnection(myPanel, uiPageDto.shapeRelationshipDtos[connectIdx]);
 		}
 		
 	}
@@ -3302,14 +3310,16 @@
 	{
 		var newShape = myPanel.createGroup();
 				
-		newShape.id = shapeDto.shapeId;
+		newShape.id = shapeDto.id;
 		newShape.shape = 'circle';
 		newShape.setLocationXY(shapeDto.centerX, shapeDto.centerY);
 					
 		newShape.shapeEventHandler = new CircleShapeEventHandler(newShape);		
 		newShape.shapeHelper = new CircleShapeHelper(newShape);
 		newShape.properties = new CircleProperties(newShape, shapeDto.sequenceNumber, shapeDto.radius);
-		
+		newShape.properties.tags = shapeDto.tagDtos;
+        newShape.properties.annotations = shapeDto.annotationDtos;
+
 		newCircle = myPanel.createCircle();		
 		newShape.addElement(newCircle);	
 		newCircle.setRadius(shapeDto.radius);
@@ -3331,7 +3341,7 @@
 	{
 		var newShape = myPanel.createGroup();
 				
-		newShape.id = shapeDto.shapeId;
+		newShape.id = shapeDto.id;
 		newShape.shape = 'square';
 		newShape.setLocationXY(shapeDto.centerX, shapeDto.centerY);
 					
@@ -3341,7 +3351,9 @@
 		newShape.properties.sequenceNumber = shapeDto.sequenceNumber;		
 		newShape.properties.setWidth(shapeDto.width);
 		newShape.properties.setHeight(shapeDto.height);
-		newShape.properties.drillDownPageId = shapeDto.drillDownPageId;	
+		newShape.properties.drillDownPageId = shapeDto.drillDownPageId;
+        newShape.properties.tags = shapeDto.tagDtos;
+        newShape.properties.annotations = shapeDto.annotationDtos;
 
 		newSquare = myPanel.createRectangle();		
 		newSquare.getStroke().setWeight(1);
@@ -3367,11 +3379,13 @@
 	function createDiamond(myPanel, shapeDto)
 	{
 		newShape = myPanel.createGroup();			
-		newShape.id = shapeDto.shapeId;
+		newShape.id = shapeDto.id;
 		newShape.shape = 'diamond';
 		newShape.shapeEventHandler = new DiamondShapeEventHandler(newShape);		
 		newShape.shapeHelper = new DiamondShapeHelper(newShape);
 		newShape.properties = new DiamondProperties(newShape, shapeDto.sequenceNumber, shapeDto.width, shapeDto.height);		
+        newShape.properties.tags = shapeDto.tagDtos;
+        newShape.properties.annotations = shapeDto.annotationDtos;
 
 		newDiamond = myPanel.createPolygon();		
 		newDiamond.getStroke().setWeight(1);
@@ -3398,12 +3412,14 @@
 	function createEllipse(myPanel, shapeDto)
 	{
 		newShape = myPanel.createGroup();			
-		newShape.id = shapeDto.shapeId;
+		newShape.id = shapeDto.id;
 		newShape.shape = 'elipse';
 		newShape.shapeEventHandler = new ElipseShapeEventHandler(newShape);
 		newShape.shapeHelper = new ElipseShapeHelper(newShape);
 		newShape.properties = new ElipseProperties(newShape, shapeDto.sequenceNumber);		
-		
+		newShape.properties.tags = shapeDto.tagDtos;
+        newShape.properties.annotations = shapeDto.annotationDtos;
+
 		newElipse = myPanel.createEllipse();		
 		newElipse.getStroke().setWeight(1);
 		newElipse.getStroke().setColor("rgb(0,0,255)");
@@ -3428,13 +3444,15 @@
 	function createOnConnector(myPanel, shapeDto)
 	{
 		newShape = myPanel.createGroup();			
-		newShape.id = shapeDto.shapeId;
+		newShape.id = shapeDto.id;
 		newShape.shape = 'onConnector';
 		newShape.setLocationXY(shapeDto.centerX, shapeDto.centerY);	
 		newShape.shapeEventHandler = new CircleShapeEventHandler(newShape);				
 		newShape.shapeHelper = new CircleShapeHelper(newShape);
 		newShape.properties = new CircleProperties(newShape, shapeDto.sequenceNumber, shapeDto.radius);
-	
+	    newShape.properties.tags = shapeDto.tagDtos;
+        newShape.properties.annotations = shapeDto.annotationDtos;
+
 		newCircle = myPanel.createCircle();				
 		newCircle.setRadius(shapeDto.radius);
 		newCircle.getStroke().setWeight(1);
@@ -3453,12 +3471,15 @@
 	function createOffConnector(myPanel, shapeDto)
 	{
 		newShape = myPanel.createGroup();			
-		newShape.id = shapeDto.shapeId;
+		newShape.id = shapeDto.id;
 		newShape.shape = 'offConnector';
 		newShape.shapeEventHandler = new OffPageEventHandler(newShape);
 		
 		newShape.shapeHelper = new OffPageShapeHelper(newShape);
 		newShape.properties = new OffPageProperties(newShape, shapeDto.sequenceNumber);				
+		newShape.properties.tags = shapeDto.tagDtos;
+        newShape.properties.annotations = shapeDto.annotationDtos;
+
 		newShape.setX(shapeDto.centerX);
 		newShape.setY(shapeDto.centerY);
 		
@@ -3481,8 +3502,7 @@
 		
 		myPanel.addElement(newShape);		
 		pageShapes.push(newShape);		
-	
-			
+
 	}
 	
 	//this function rebuilds the connections on a saved page between the shapes. There can be connections between shapes on the page or connections
@@ -3491,13 +3511,15 @@
 	function createConnection(myPanel, shapeRelationshipDto)
 	{		
 		var newShape = myPanel.createGroup();			
-		newShape.id = shapeRelationshipDto.relationshipId;
+		newShape.id = shapeRelationshipDto.id;
 		newShape.shape = 'line';
 		newShape.shapeEventHandler = new LineShapeEventHandler(newShape);			
 		newShape.properties = new LineProperties(newShape, shapeRelationshipDto.sequenceNumber);			
 		newShape.shapeHelper = new LineShapeHelper(newShape);
-		
-		newShape.properties.relationshipType = shapeRelationshipDto.lovRelationshipType;
+		newShape.properties.tags = shapeRelationshipDto.tagDtos;
+        newShape.properties.annotations = shapeRelationshipDto.annotationDtos;
+
+		newShape.properties.relationshipType = shapeRelationshipDto.relationshipType;
 		
 		newLine = myPanel.createLine();
 		var myStroke = new jsgl.stroke.SolidStroke();	
@@ -3571,9 +3593,9 @@
 		pageShapes.push(newShape);
 	}
 	
-	//this function will move all shapes in the pageShapes array to a new uiPageDto and then persist.
-	//The pageDto is returned.
-	function savePage()
+	//this function will move all shapes in the pageShapes array to a new uiPageDto
+	//and then return the uiPageDto.
+	function preparePageForPersist()
 	{
 		getController().initializePageDto();
 
@@ -3595,8 +3617,7 @@
 			}
 		}
 		
-		return persistPage(uiPageDto);
-		
+        return uiPageDto;
 	}
 	
 	function addShapeToUiPageDto(uiPageDto, shape)
@@ -3606,6 +3627,10 @@
 		newShape.sequenceNumber = shape.properties.sequenceNumber;
 		
 		// ref artifacts
+        if (shape.properties.artifact != null)
+        {
+            shape.referenceArtifactDto = shape.properties.artifact;
+        }
 
 		if ((shape.shape == 'circle') || (shape.shape == 'onConnector'))
 		{
@@ -3617,7 +3642,7 @@
 			newShape.height = shape.properties.getHeight();
 		}
 
-		newShape.shapeId = shape.id;
+		newShape.id = shape.id;
 		newShape.drillDownPageId = shape.properties.drillDownPageId;
 		
 		newShape.centerX = shape.getX();
@@ -3626,15 +3651,15 @@
 		
 		for (var tagIdx = 0; tagIdx < shape.properties.tags.length; tagIdx ++)
 		{
-			newShape.tags.push(shape.properties.tags[tagIdx]);
+			newShape.tagDtos.push(shape.properties.tags[tagIdx]);
 		}
 
 		for (var idx = 0; idx < shape.properties.annotations.length; idx++)
 		{
-			newShape.annotations.push(shape.properties.annotations[idx]);
+			newShape.annotationDtos.push(shape.properties.annotations[idx]);
 		}
 
-		uiPageDto.shapes.push(newShape);
+		uiPageDto.shapeDtos.push(newShape);
 	}
 	
 
@@ -3642,74 +3667,71 @@
 	{
 		var newConnection = new shapeRelationshipDto();
 
-		newConnection.relationshipId = shape.id;
+		newConnection.id = shape.id;
 		newConnection.fromShapeId = shape.properties.startObjectId;
 		newConnection.toShapeId = shape.properties.endObjectId;   //**** deal with page connections later
-		newConnection.lovRelationshipType = shape.properties.relationshipType;
+		newConnection.relationshipType = shape.properties.relationshipType;
 		newConnection.startXLocation = shape.properties.startPointVector.getX();
 		newConnection.startYLocation = shape.properties.startPointVector.getY();
 		newConnection.endXLocation = shape.properties.endPointVector.getX();
 		newConnection.endYLocation = shape.properties.endPointVector.getY();
 		newConnection.shapeText = shape.properties.shapeText;
-		uiPageDto.connections.push(newConnection);
+		newConnection.drillDownPageId = null;
+
+		for (var tagIdx = 0; tagIdx < shape.properties.tags.length; tagIdx ++)
+        {
+            newConnection.tagDtos.push(shape.properties.tags[tagIdx]);
+        }
+
+        for (var idx = 0; idx < shape.properties.annotations.length; idx++)
+        {
+            newConnection.annotationDtos.push(shape.properties.annotations[idx]);
+        }
+
+		uiPageDto.shapeRelationshipDtos.push(newConnection);
 	}
+
+    function savePage()
+    {
+        var uiPageDto = preparePageForPersist();
+        persistPage(uiPageDto);
+
+    }
 
 	function persistPage(pageDto)
 	{
-		//see if the incoming page has already been saved
-		//invoke server to get the uiPageDto for the incoming page
-		var newPage = true;
-		for (var idx = 0; idx < pageCache.length; idx++)
-		{
-			if (pageCache[idx].pageDto.pageId == pageDto.pageDto.pageId)
+		getController().savePage(pageDto);
+
+	}
+
+    //this method is called when the save button on the edit popup is clicked
+	function saveEdits(event)
+	{
+        if (getController().newPageAction == "drilldown")
+        {
+           handleNewPageDiagram();
+        }
+	    else
+	    {
+           if (getController().isPage)
+	        {
+			    getController().savePageEdits();
+			    editPageDialog.dialog("close");
+			}
+			else
 			{
-				pageCache[idx] = pageDto;
-				newPage = false;
-				break;
+			    if (event == "save")
+                {
+                    releasePen(getController().getCurrentShape(), "saveEditShape");
+                    getController().saveShape();
+                    editShapeDialog.dialog("close");
+                    editConnectorDialog.dialog("close");
+                }
 			}
 		}
-
-		if (newPage)
-		{
-			//dummy code for now - will be swapped with call to back-end
-			//the backend will need to 
-			
-			pageCache.push(pageDto);
-		}
-
-		//back end functionality:
-		//1) delink any pages that refer to this page where this page doesn't refer to the existing page
-		//      for each persisted page
-		//          for each predecessor page
-		//             does the predecessor page = the page being saved?
-		//             if so
-		//                are there any shapes on the incoming page that refer to the persisted page?
-		//                if not - remove the incoming page from the predecessor page list
-
-		logUiPageDto(pageDto);
-
-		return pageDto;
-
 	}
 
-	function saveEditPage()
-	{
-			getController().savePageEdits();
-			editPageDialog.dialog("close");
-	}
-
-	function saveEditShape(event )
-	{
-		if (event == "save")
-		{
-			releasePen(getController().getCurrentShape(), "saveEditShape");
-			getController().saveShape();
-			editShapeDialog.dialog("close");
-			editConnectorDialog.dialog("close");
-		}
-	}
-	
-	//return a refence to the pages angular controller js
+	//return a reference to the pages angular controller js
 	function getController()
 	{
 		return angular.element(document.getElementById('canvasController')).scope();
@@ -3728,9 +3750,7 @@
 	}
 
 	$(function() {
-	
-		getController().setPageShapes(pageShapes);
-		
+
 	    /* Instantiate JSGL Panel. */
 		myPanel = new jsgl.Panel(document.getElementById("panel"));
 			
@@ -4033,15 +4053,13 @@
 			}
 		}
 		
-		
 		//when a user right clicks on a shape and chooses to drill down to an existing page
 		function handleDrillDownPageItem(selectedShape)
 		{
 			if (selectedShape != null)
 			{
-				
 				//load the new page context - but initialize it with a link to the source shape
-				loadPage(selectedShape.properties.drillDownPageId);				
+				getController().navigateToDiagram(selectedShape.properties.drillDownPageId);
 			}
 			
 			return true;
@@ -4050,12 +4068,7 @@
 		//when a user right clicks on a shape and chooses to create a drill down to a new page
 		function handleDrillDownNewPageItem(selectedShape)
 		{
-		
-			getController().newPageAction = "drilldown";
-			getController().pageTitle = "";
-			getController().pageDescription = "";
-			newPageDiagram.dialog("open");
-
+			getController().setupDrillDownToNewPage(selectedShape);
 			return true;
 		}
 		
@@ -4094,53 +4107,77 @@
 			searchDiagramDialog.dialog("close");
 			releasePen(getController().currentShape, 'handleSelectDiagram');
 		}
-		
-		//define he editShape popup
-		editShapeDialog = $("#editShape").dialog({
+
+		function saveNewTag()
+        {
+            getController().saveNewTag();
+        }
+
+		//define the editShape popup
+		editShapeDialog = $("#addEditProperties").dialog({
 			autoOpen: false,
 			height: 700,
 			width:  600,
 			modal: true,
 			buttons: {
 				"Save": function() {
-					saveEditShape("save")
+					saveEdits("save")
 				},
 				Cancel: function() {
 					editShapeDialog.dialog("close");
 				}
-			},
-			close: function() {
-				editForm[0].reset();
-			//	allFields.removeClass("ui_state_error");
 			}
 		});
-		
+
+		//define the artifact info popup
+        artifactInfoDialog = $("#artifactInfoAI").dialog({
+            autoOpen: false,
+            height: 700,
+            width:  600,
+            modal: true,
+            buttons: {
+                Cancel: function() {
+                    artifactInfoDialog.dialog("close");
+                }
+            }
+        });
 		
 		editForm = editShapeDialog.find("form").on("submit", function (event) {
 			event.preventDefault();
-			saveEditShape();
+			saveEdits();
 		});
 		
 		//define the editPapge popup
-		editPageDialog = $("#editPage").dialog({
+		editPageDialog = $("#addEditProperties").dialog({
 			autoOpen: false,
 			height: 700,
 			width:  600,
 			modal: true,
 			buttons: {
 				"Save": function() {
-					saveEditPage("save")
+					saveEdits("save")
 				},
 				Cancel: function() {
 					editPageDialog.dialog("close");
 				}
-			},
-			close: function() {
-				editForm[0].reset();			
 			}
 		});
 
-		//define he editConnector popup
+        addTagType = $("#frmAddTagType").dialog({
+                autoOpen: false,
+                height: 250,
+                width: 400,
+                modal: true,
+                buttons: {
+                    "Save": function() {
+                        saveNewTag();
+                    },
+                    Cancel: function() {
+                        addTagType.dialog("close");
+                    }
+                }
+            });
+		//define the editConnector popup
 		editConnectorDialog = $("#editConnector").dialog({
 			autoOpen: false,
 			height: 700,
@@ -4148,7 +4185,7 @@
 			modal: true,
 			buttons: {
 				"Save": function() {
-					saveEditShape("save")
+					saveEdits("save")
 				},
 				Cancel: function() {
 					editConnectorDialog.dialog("close");
@@ -4156,7 +4193,7 @@
 			},
 			close: function() {
 				editForm[0].reset();
-			//	allFields.removeClass("ui_state_error");
+
 			}
 		});
 		
@@ -4183,20 +4220,7 @@
 			modal: false
 		});
 
-		//define the popup for adding a new page as part of a drill down
-		newPageDiagram = $("#newPage").dialog({
-			autoOpen: false,
-			height: 400,
-			width:  700,
-			modal: true,
-			buttons: {
-				"Save": function() {
-					handleNewPageDiagram();
-				},
-				Cancel: function() {
-					newPageDiagram.dialog("close");
-				}
-			}			
-		})
-		
+        loadPage(null);
+	    getController().setPageShapes(pageShapes);
+
     });

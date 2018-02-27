@@ -14,11 +14,13 @@
     <script src="/scripts/vendor/jquery-ui.js"></script>
     <script src="/scripts/vendor/angular.min.js"></script>
     <script src="/scripts/js/artifactLibrary.js"></script>
+    <script src="/scripts/js/common.js"></script>
+    <script src="/scripts/controllers/baseController.js"></script>
     <script src="/scripts/services/libraryService.js"></script>
     <script src="/scripts/services/artifactService.js"></script>
     <script src="/scripts/services/tagService.js"></script>
     <script src="/scripts/services/lovService.js"></script>
-    <script src="/scripts/controllers/baseController.js"></script>
+
     <script src="/scripts/controllers/artifactLibraryController.js"></script>
 
 
@@ -31,23 +33,9 @@
 </head>
 <body>
 <div ng-app="bluelamp" ng-controller="artifactLibraryController" id="artifactLibraryController">
-    <div class="header">
-        <ul class="nav nav-tabs">
-            <li class="nav-item">
-                <a class="nav-link" href="#">Home</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Library Catelog</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link active" href="#">Artifacts</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Diagrams</a>
-            </li>
-        </ul>
-    </div>
-    <div class="container-fluid">
+    <#include "/includes/menu.ftl" />
+
+    <div class="container-fluid" ng-cloak>
         <div class="panel-group">
             <div class="panel panel-primary">
                 <div class="panel-heading">
@@ -60,24 +48,27 @@
                             <ul>
                                 <li class="libraryHeader1 libraryItem"
                                     ng-repeat="library1 in libraryList"
+                                    id="{{library1.id}}"
                                     ng-click="showHideArtifacts(this)"
                                     data-library-id="{{library1.id}}"
                                     data-library-level="{{library1.level}}">
-                                    {{library1.description}} [{{library1.subLibraryList.length || library1.subLibraryCount}}]
+                                    {{library1.description}} [{{library1.subLibraryList.length || library1.subLibraryCount}}] (artifacts: {{library1.artifactCount}})
                                     <ul class="libraryHeader2" ng-hide="!library1.expanded" >
                                         <li   class="libraryItem"
                                               ng-repeat="library2 in library1.subLibraryList"
+                                              id="{{library2.id}}"
                                               ng-click="showHideArtifacts(this)"
                                               data-library-id="{{library2.id}}"
                                               data-library-level="{{library2.level}}">
-                                            {{library2.description}} [{{library2.subLibraryList.length || library2.subLibraryCount}}]
+                                            {{library2.description}} [{{library2.subLibraryList.length || library2.subLibraryCount}}] (artifacts: {{library2.artifactCount}})
                                             <ul class="libraryHeader3" ng-hide="!library2.expanded">
                                                 <li class="libraryItem"
                                                     ng-repeat="library3 in library2.subLibraryList"
+                                                    id="{{library3.id}}"
                                                     ng-click="showHideArtifacts(this)"
                                                     data-library-id="{{library3.id}}"
                                                     data-library-level="{{library3.level}}">
-                                                    {{library3.description}} [{{library3.subLibraryList.length || library3.subLibraryCount}}]
+                                                    {{library3.description}} [{{library3.subLibraryList.length || library3.subLibraryCount}}] (artifacts: {{library3.artifactCount}})
                                                 </li>
                                             </ul>
                                         </li>
@@ -95,215 +86,39 @@
                 </div>
                 <div class="panel-body">
                     <div class="well">
-                        <div class="dataTables_scrollHeadInner">
-                            <table>
-                                <tr>
-                                    <th>
-                                        Artifact Title
-                                    </th>
 
-                                </tr>
-                                <tr ng-repeat="artifact in artifactList">
-                                    <td>
-                                        <div class="artifactItem"
-                                             data-artifact-id="{{artifact.id}}">{{artifact.documentTitle}}</div>
-                                    </td>
+                        <table class="table table-sm table-hover">
+                            <tr>
+                                <th>
+                                    Artifact Title
+                                </th>
 
-                                </tr>
-                            </table>
-                        </div>
+                            </tr>
+                            <tr ng-repeat="artifact in artifactList">
+                                <td>
+                                    <div class="artifactItem"
+                                         data-artifact-id="{{artifact.id}}">{{artifact.documentTitle}}</div>
+                                </td>
+
+                            </tr>
+                        </table>
+
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- this is the popup for adding/editing a new Artifact-->
-    <form id="addEditArtifact"
-          title = "Add/Edit Artifact"
-          class="form-horizontal" novalidate>
+    <#include "/includes/addEditProperties.ftl" />
 
-        <div class="panel panel-danger" ng-show="errors.length > 0">
-            <div class="panel-heading">The Following Errors Occurred</div>
-            <div class="panel-body">
-                <p ng-repeat="row in errors">{{row.errorMessage}}</p>
-            </div>
-        </div>
-
-        <div  class="form-group form-group-sm">
-            <label class="control-label col-md-2" for="fldTitle">Title: </label>
-
-            <div class="col-md-4">
-                <input 	class="form-control form-control-md"
-                        required
-                        type="text"
-                        id="fldTitle"
-                        name="fldTitle"
-                        value="{{currentArtifact.documentTitle}}"
-                        ng-model="currentArtifact.documentTitle"
-                        maxlength="50"
-                        size="25">
-            </div>
-
-            <label class="control-label col-md-2" for="fldAbbreviation">Abbreviation: </label>
-
-            <div class="col-md-4">
-                <input 	class="form-control form-control-md"
-                          type="text"
-                          required
-                      id="fldAbbreviation"
-                      name="fldAbbreviation"
-                      value="{{currentArtifact.abbreviation}}"
-                      ng-model="currentArtifact.abbreviation"
-                      maxlength="50"
-                      size="25">
-            </div>
-
-        </div>
-
-        <div class="form-group form-group-sm">
-
-            <label class="control-label col-md-2" for="fldDocType"><a ng-click="openNewDocType()">Document Type:</a></label>
-
-            <div class="col-md-9">
-                <select id="fldDocType"
-                        name="fldDocType"
-                        required
-                        class="form-control"
-                        ng-model="currentArtifact.documentType"
-                        ng-options="docType.shortName for docType in docTypeList track by docType.id">
-                </select>
-            </div>
-
-        </div>
-        <div class="form-group form-group-sm">
-
-            <label class="control-label col-md-2" for="fldDocDetail">Detail: </label>
-
-            <div class="col-md-9">
-                <textarea	id="fldDocDetail"
-                             required
-                             ng-model="currentArtifact.detailedText"
-                             class="form-control"
-                             name="fldDocDetail" rows="2" columns="20">{{currentArtifact.detailedText}}
-                </textarea>
-            </div>
-
-        </div>
-        <div class="form-group form-group-sm">
-            <label class="control-label col-md-2" for="fldLibrary1">Categorize: </label>
-
-            <div class="col-md-5">
-
-                <select id="fldLibrary1"
-                        name="fldLibrary1"
-                        class="form-control"
-                        ng-model="selectedLibrary1"
-                        ng-options="library1.description for library1 in library1List track by library1.description"
-                        ng-change="loadLibrary2List()">
-                </select>
-            </div>
-        </div>
-        <div class="form-group form-group-sm">
-            <div class="col-md-2">
-            </div>
-            <div class="col-md-5">
-                <select id="fldLibrary2"
-                        name="fldLibrary2"
-                        class="form-control"
-                        ng-model="selectedLibrary2"
-                        ng-options="library2.description for library2 in library2List track by library2.description"
-                        ng-change="loadLibrary3List()">
-                </select>
-            </div>
-        </div>
-        <div class="form-group form-group-sm">
-            <div class="col-md-2">
-            </div>
-            <div class="col-md-5">
-                  <select id="fldLibary3"
-                            name="fldLibrary3"
-                            class="form-control"
-                            ng-model="selectedLibrary3"
-                            ng-options="library3.description for library3 in library3List track by library3.description"
-                            ng-change="loadArtifactList()">
-                    </select>
-            </div>
-        </div>
-        <div class="form-group form-group-sm">
-            <div class="col-md-2">
-                Parent Artifact:
-            </div>
-            <div class="col-md-5">
-                {{parentArtifact.documentTitle}}
-            </div>
-            <div class="col-md-3">
-                <button id="btnParentArtifactSearch"
-                        class="btn btn-primary"
-                        ng-click="openSearchDialog()">Search
-                </button>
-            </div>
-        </div>
-        <div class="well">
-            <div class="form-group form-group-sm">
-                <label class="control-label col-md-2" for="fldTagType"><a ng-click="openNewTag()">Tag(s):</a> </label>
-
-                <div class="col-md-3">
-                    <select id="fldTagType" name="fldTagType" class="form-control"
-                            ng-model="selectedTagType"
-                            ng-options="tagValue.longName for tagValue in tagLibrary">
-                        <option></option>
-                    </select>
-                </div>
-
-                <div class="col-md-3">
-                    <input class="form-control form-control-md"
-                           type="text"
-                           id="fldTagValue"
-                           name="fldTagValue"
-                           value="{{selectedTagValue}}"
-                           ng-model="selectedTagValue"
-                           size="25">
-                </div>
-                <div class="col-md-3">
-                    <button id="btnAddTag"
-                            class="btn btn-primary"
-                            ng-click="addTag()">Add
-                    </button>
-                </div>
-            </div>
-            <div class="form-group form-group-sm">
-                <div class="col-md-12">
-                    <table id="tblTags" class="tblFormatDisplay">
-                        <thead>
-                        <tr>
-                            <th>Tag Type</th>
-                            <th>Tag Value</th>
-                            <th>Delete</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr ng-repeat="row in currentArtifact.tags">
-                            <td>{{row.lov.longName}}</td>
-                            <td>{{row.tagValue}}</td>
-                            <td><input type="checkbox" name="delTag$index" ng-click="deleteTag(row)"></td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-    </form>
-
-    <!-- this is the popup to add a new tag type -->
+    <!-- this is the popup to add a new document type -->
     <form id="frmAddDocType" title = "Add Document Type"
-          class="form-horizontal" novalidate>
+          class="form-horizontal" novalidate ng-cloak>
 
-        <div class="panel panel-danger" ng-show="errors.length > 0">
+        <div class="panel panel-danger" ng-show="popupErrors.length > 0">
             <div class="panel-heading">The Following Errors Occurred</div>
             <div class="panel-body">
-                <p ng-repeat="row in errors">{{row.errorMessage}}</p>
+                <p ng-repeat="row in popupErrors">{{row.errorMessage}}</p>
             </div>
         </div>
 
@@ -341,51 +156,10 @@
     </form>
 
     <!-- this is the popup to add a new tag type -->
-    <form id="frmAddTagType" title = "Add Tag Type"
-          class="form-horizontal" novalidate>
-
-        <div class="panel panel-danger" ng-show="errors.length > 0">
-            <div class="panel-heading">The Following Errors Occurred</div>
-            <div class="panel-body">
-                <p ng-repeat="row in errors">{{row.errorMessage}}</p>
-            </div>
-        </div>
-
-        <div   class="form-group form-group-sm">
-            <label class="control-label col-md-4" for="fldNewTagTypeShortName">Short Name: </label>
-
-            <div class="col-md-8">
-                <input 	class="form-control form-control-md"
-                          required
-                          type="text"
-                          id="fldNewTagTypeShortName"
-                          name="fldNewTagTypeShortName"
-                          value="{{newTagTypeShortName}}"
-                          ng-model="newTagTypeShortDesc"
-                          maxlength="40"
-                          size="40">
-            </div>
-        </div>
-        <div   class="form-group form-group-sm">
-            <label class="control-label col-md-4" for="fldNewTagTypeLongName">Long Name: </label>
-
-            <div class="col-md-8">
-                <input 	class="form-control form-control-md"
-                          required
-                          type="text"
-                          id="fldNewTagTypeLongName"
-                          name="fldNewTagTypeLongName"
-                          value="{{newTagTypeLongName}}"
-                          ng-model="newTagTypeLongDesc"
-                          maxlength="40"
-                          size="40">
-            </div>
-        </div>
-
-    </form>
+    <#include "/includes/addTagType.ftl" />
 
     <!-- this is the popup for searching for an artifact -->
-    <div id="searchArtifact" title = "Artifact Search">
+    <div id="searchArtifact" title = "Artifact Search" ng-cloak>
 
         <table class="tblformatOnly">
             <tr>

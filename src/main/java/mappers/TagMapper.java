@@ -14,7 +14,7 @@ public class TagMapper {
         TagDto tagDto = new TagDto();
         tagDto.setTagValue(tag.getTagValue());
         tagDto.setId(tag.getId());
-        tagDto.setLov(tag.getLovTagType());
+        tagDto.setLovDto(LovMapper.mapModelToDto(tag.getLovTagType()));
 
         return tagDto;
     }

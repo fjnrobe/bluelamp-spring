@@ -8,7 +8,7 @@ import main.java.models.Lov;
 public class TagDto {
     private String id;       //id of the tag
     private String tagValue; //value of the tag
-    private Lov lov;        //this is the lov entry for the tag
+    private LovDto lovDto;        //this is the lov entry for the tag
 
     public String getId() {
         return id;
@@ -26,11 +26,11 @@ public class TagDto {
         this.tagValue = tagValue;
     }
 
-    public Lov getLov() {
-        return lov;
+    public LovDto getLovDto() {
+        return lovDto;
     }
 
-    public void setLov(Lov lov) {
-        this.lov = lov;
+    public void setLovDto(LovDto lovDto) {
+        this.lovDto = lovDto;
     }
 }

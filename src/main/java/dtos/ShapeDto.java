@@ -3,6 +3,7 @@ package main.java.dtos;
 import main.java.models.Annotation;
 import main.java.models.Artifact;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -11,7 +12,7 @@ import java.util.List;
 public class ShapeDto {
 
     private String id;
-    private int sequenceNumber;
+    private String sequenceNumber;
     private ArtifactDto referenceArtifactDto;
     private String shapeType;
     private int radius;
@@ -21,8 +22,8 @@ public class ShapeDto {
     private int centerY;
     private String shapeText;
     private String drillDownPageId;
-    private List<TagDto> tagDtos;
-    private List<AnnotationDto> annotationDtos;
+    private List<TagDto> tagDtos = new ArrayList<TagDto>();
+    private List<AnnotationDto> annotationDtos = new ArrayList<AnnotationDto>();
 
     public String getId() {
         return id;
@@ -32,11 +33,11 @@ public class ShapeDto {
         this.id = id;
     }
 
-    public int getSequenceNumber() {
+    public String getSequenceNumber() {
         return sequenceNumber;
     }
 
-    public void setSequenceNumber(int sequenceNumber) {
+    public void setSequenceNumber(String sequenceNumber) {
         this.sequenceNumber = sequenceNumber;
     }
 

@@ -1,9 +1,7 @@
 package main.java.controllers;
 
 import main.java.common.URLConstants;
-import main.java.dtos.ArtifactDto;
-import main.java.dtos.ErrorDto;
-import main.java.dtos.PageDto;
+import main.java.dtos.*;
 import main.java.managers.DiagramManager;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,14 +25,33 @@ public class DiagramController {
 
     Logger logger = Logger.getLogger(DiagramController.class);
 
-    @PostMapping(URLConstants.DIAGRAM_POST)
-    public ResponseEntity<List<ErrorDto>> saveDiagram(@Valid @RequestBody
-                                                              PageDto pageDto)
+    @PostMapping(URLConstants.DIAGRAM_POST_NEW_DRILLDOWN)
+    public ResponseEntity<List<ErrorDto>> saveDrillDownPage(@Valid @RequestBody
+                                                                    NewDrilldownDto newDrilldownDto)
     {
 
-        logger.info("called diagram - POST");
+        logger.info("called saveDrillDownPage");
 
-        List<ErrorDto> errors = this.diagramManager.validateAndSaveDiagram(pageDto);
+        List<ErrorDto> errors = this.diagramManager.validateAndSaveDrilldownPage(newDrilldownDto);
+
+        if (!errors.isEmpty())
+        {
+            return new ResponseEntity(errors, HttpStatus.NOT_ACCEPTABLE);
+        }
+        else
+        {
+            return new ResponseEntity(HttpStatus.CREATED);
+        }
+    }
+
+    @PostMapping(URLConstants.DIAGRAM_POST)
+    public ResponseEntity<List<ErrorDto>> savePage(@Valid @RequestBody
+                                                           UiPageDto uiPageDto)
+    {
+
+        logger.info("called diagram - post");
+
+        List<ErrorDto> errors = this.diagramManager.validateAndSavePage(uiPageDto);
 
         if (!errors.isEmpty())
         {

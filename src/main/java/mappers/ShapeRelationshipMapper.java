@@ -1,10 +1,8 @@
 package main.java.mappers;
 
-import main.java.dtos.ShapeDto;
 import main.java.dtos.ShapeRelationshipDto;
 import main.java.models.Annotation;
-import main.java.models.Shape;
-import main.java.models.ShapeRelationship;
+import main.java.models.Relationship;
 import main.java.models.Tag;
 
 /**
@@ -12,28 +10,28 @@ import main.java.models.Tag;
  */
 public class ShapeRelationshipMapper {
 
-    public static ShapeRelationshipDto mapModelToDto(ShapeRelationship shapeRelationship) {
+    public static ShapeRelationshipDto mapModelToDto(Relationship relationship) {
 
         ShapeRelationshipDto shapeRelationshipDto = new ShapeRelationshipDto();
 
-        shapeRelationshipDto.setId(shapeRelationship.getId());
-        shapeRelationshipDto.setShapeText(shapeRelationship.getShapeText());
+        shapeRelationshipDto.setId(relationship.getId());
+        shapeRelationshipDto.setShapeText(relationship.getShapeText());
 
-        shapeRelationshipDto.setEndXLocation(shapeRelationship.getEndXLocation());
-        shapeRelationshipDto.setEndYLocation(shapeRelationship.getEndYLocation());
-        shapeRelationshipDto.setFromShapeId(shapeRelationship.getFromShapeId());
-        shapeRelationshipDto.setLovRelationshipType(LovMapper.mapModelToDto(shapeRelationship.getLovRelationshipType()));
-        shapeRelationshipDto.setRelationshipGraphicId(shapeRelationship.getRelationshipGraphicId());
-        shapeRelationshipDto.setStartXLocation(shapeRelationship.getStartXLocation());
-        shapeRelationshipDto.setStartYLocation(shapeRelationship.getStartYLocation());
-        shapeRelationshipDto.setToShapeId(shapeRelationship.getToShapeId());
+        shapeRelationshipDto.setEndXLocation(relationship.getEndXLocation());
+        shapeRelationshipDto.setEndYLocation(relationship.getEndYLocation());
+        shapeRelationshipDto.setFromShapeId(relationship.getFromShapeId());
+        shapeRelationshipDto.setRelationshipType(relationship.getRelationshipType());
+        shapeRelationshipDto.setRelationshipGraphicId(relationship.getRelationshipGraphicId());
+        shapeRelationshipDto.setStartXLocation(relationship.getStartXLocation());
+        shapeRelationshipDto.setStartYLocation(relationship.getStartYLocation());
+        shapeRelationshipDto.setToShapeId(relationship.getToShapeId());
 
-        for (Annotation annotation : shapeRelationship.getAnnotations())
+        for (Annotation annotation : relationship.getAnnotations())
         {
             shapeRelationshipDto.getAnnotationDtos().add(AnnotationMapper.mapModelToDto(annotation));
         }
 
-        for (Tag tag : shapeRelationship.getTags())
+        for (Tag tag : relationship.getTags())
         {
             shapeRelationshipDto.getTagDtos().add(TagMapper.mapModelToDto(tag));
         }

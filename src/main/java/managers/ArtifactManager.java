@@ -1,17 +1,12 @@
 package main.java.managers;
 
+import main.java.dtos.AnnotationDto;
 import main.java.dtos.ArtifactDto;
 import main.java.dtos.ErrorDto;
 import main.java.dtos.TagDto;
 import main.java.mappers.ArtifactMapper;
-import main.java.models.Artifact;
-import main.java.models.LibraryLevel;
-import main.java.models.Lov;
-import main.java.models.Tag;
-import main.java.repositories.ArtifactRepository;
-import main.java.repositories.LibraryLevelRepository;
-import main.java.repositories.LovRepository;
-import main.java.repositories.TagRepository;
+import main.java.models.*;
+import main.java.repositories.*;
 import main.java.utilities.StringUtils;
 import org.apache.log4j.Logger;
 import org.springframework.stereotype.Repository;
@@ -31,16 +26,22 @@ public class ArtifactManager {
     private final LibraryLevelRepository libraryLevelRepository;
     private final LovRepository lovRepository;
     private final TagRepository tagRepository;
+    private final DiagramRepository diagramRepository;
+    private final ShapeRepository shapeRepository;
 
     public ArtifactManager(ArtifactRepository repository,
                            LibraryLevelRepository libraryRepository,
                            LovRepository lovRepository,
-                           TagRepository tagRepository)
+                           TagRepository tagRepository,
+                           DiagramRepository diagramRepository,
+                           ShapeRepository shapeRepository)
     {
         this.artifactRepository = repository;
         this.libraryLevelRepository = libraryRepository;
         this.lovRepository = lovRepository;
         this.tagRepository = tagRepository;
+        this.diagramRepository = diagramRepository;
+        this.shapeRepository = shapeRepository;
     }
 
     public List<ArtifactDto> getArtifactsByLibraryId(String libraryId)
@@ -67,7 +68,7 @@ public class ArtifactManager {
 
     public List<ErrorDto> validateAndSaveArtifact(ArtifactDto artifactDto) {
 
-        List<ErrorDto> errors = this.validateArtifact(artifactDto);
+        List<ErrorDto> errors = this.validateArtifactForSave(artifactDto);
 
         if (errors.size() == 0) {
             this.saveArtifact(artifactDto);
@@ -78,7 +79,7 @@ public class ArtifactManager {
 
     //validate the contents of the artifact
     //1) all required fields are present
-    private List<ErrorDto> validateArtifact(ArtifactDto artifactDto) {
+    private List<ErrorDto> validateArtifactForSave(ArtifactDto artifactDto) {
         List<ErrorDto> errors = new ArrayList<ErrorDto>();
 
         if (StringUtils.isEmpty(artifactDto.getId())) {
@@ -133,9 +134,9 @@ public class ArtifactManager {
         }
 
         //add all the incoming tags
-        for (TagDto tagDto : artifactDto.getTags())
+        for (TagDto tagDto : artifactDto.getTagDtos())
         {
-            Lov tagLov = this.lovRepository.findById(tagDto.getLov().getId());
+            Lov tagLov = this.lovRepository.findById(tagDto.getLovDto().getId());
 
             Tag tag = new Tag();
             tag.setId(tagDto.getId());
@@ -147,8 +148,60 @@ public class ArtifactManager {
             artifact.addTag(tag);
         }
 
+        //add all the incoming annotations
+        for (AnnotationDto annotationDto : artifactDto.getAnnotationDtos())
+        {
+            Annotation annotation = new Annotation();
+            annotation.setId(annotationDto.getId());
+            annotation.setAnnotationText(annotationDto.getAnnotationText());
+
+            artifact.addAnnotation(annotation);
+        }
         this.artifactRepository.save(artifact);
 
     }
 
+    //validate and delete a given artifact
+    public List<ErrorDto> validateAndDeleteArtifact(String artifactId)
+    {
+        List<ErrorDto> errors = this.validateArtifactForDelete(artifactId);
+
+        if (errors.size() == 0) {
+            this.deleteArtifact(artifactId);
+        }
+
+        return errors;
+    }
+
+    private List<ErrorDto> validateArtifactForDelete(String artifactId)
+    {
+        List<ErrorDto> errors = new ArrayList<ErrorDto>();
+
+        //the artifact cannot be referenced by any diagrams or shapes
+        List<Diagram> existingDiagrams =
+                this.diagramRepository.findByArtifactId(artifactId);
+        if ((existingDiagrams != null) && (existingDiagrams.size() > 0))
+        {
+            errors.add(new ErrorDto("This artifact cannot be deleted, it is referenced by 1 or more diagrams"));
+        }
+
+        List<Shape> existingShapes =
+                this.shapeRepository.findByArtifactId(artifactId);
+        if ((existingShapes != null) && (existingShapes.size() > 0))
+        {
+            errors.add(new ErrorDto("This artifact cannot be deleted, it is referenced by 1 or more shapes"));
+        }
+
+        return errors;
+    }
+
+    private void deleteArtifact(String artifactId)
+    {
+        Artifact artifact = this.artifactRepository.findById(artifactId);
+
+        if (artifact != null)
+        {
+            this.artifactRepository.delete(artifact);
+        }
+    }
 }

@@ -13,9 +13,9 @@ public class PageDto {
     private String pageTitle;
     private String pageDescription;
     private String libraryId;
-    private ArtifactDto artifactDto;
-    private List<TagDto> tags = new ArrayList<TagDto>();
-    private List<AnnotationDto> annotations = new ArrayList<AnnotationDto>();
+    private String artifactId;
+    private List<TagDto> tagDtos = new ArrayList<TagDto>();
+    private List<AnnotationDto> annotationDtos = new ArrayList<AnnotationDto>();
 
     public String getId() {
         return id;
@@ -49,27 +49,27 @@ public class PageDto {
         this.libraryId = libraryId;
     }
 
-    public List<TagDto> getTags() {
-        return tags;
+    public String getArtifactId() {
+        return artifactId;
     }
 
-    public void setTags(List<TagDto> tags) {
-        this.tags = tags;
+    public void setArtifactId(String artifactId) {
+        this.artifactId = artifactId;
     }
 
-    public List<AnnotationDto> getAnnotations() {
-        return annotations;
+    public List<TagDto> getTagDtos() {
+        return tagDtos;
     }
 
-    public void setAnnotations(List<AnnotationDto> annotations) {
-        this.annotations = annotations;
+    public void setTagDtos(List<TagDto> tagDtos) {
+        this.tagDtos = tagDtos;
     }
 
-    public ArtifactDto getArtifactDto() {
-        return artifactDto;
+    public List<AnnotationDto> getAnnotationDtos() {
+        return annotationDtos;
     }
 
-    public void setArtifactDto(ArtifactDto artifactDto) {
-        this.artifactDto = artifactDto;
+    public void setAnnotationDtos(List<AnnotationDto> annotationDtos) {
+        this.annotationDtos = annotationDtos;
     }
 }

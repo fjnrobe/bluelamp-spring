@@ -15,8 +15,9 @@ import java.util.Date;
 @Table(name = "tag")
 @EntityListeners(AuditingEntityListener.class)  //enables auto maintenance of create/update dates
 
-public class Tag implements Persistable {
+public class Tag {
 
+    @Id
     private String id;
 
     //note - a tag could be applied to an artifact, shape, connection, page
@@ -44,7 +45,7 @@ public class Tag implements Persistable {
 
     @ManyToOne
     @JoinColumn(name="shape_relationship_id", foreignKey = @ForeignKey(name="shape_relationship_id_fk"))
-    private ShapeRelationship shapeRelationship;
+    private Relationship relationship;
 
     @Column(nullable = false, updatable = false)
     @Temporal(TemporalType.TIMESTAMP)
@@ -60,13 +61,10 @@ public class Tag implements Persistable {
     {
     }
 
-    @Override
-    @Id
+
     public String getId() {
         return id;
     }
-
-    public void setNew(boolean isNew) {};
 
     public void setId(String id) {
         this.id = id;
@@ -118,11 +116,6 @@ public class Tag implements Persistable {
 
     public void setDiagram(Diagram diagram) {this.diagram = diagram;};
 
-    @Override
-    public boolean isNew() {
-        return false;
-    }
-
     public Shape getShape() {
         return shape;
     }
@@ -131,11 +124,13 @@ public class Tag implements Persistable {
         this.shape = shape;
     }
 
-    public ShapeRelationship getShapeRelationship() {
-        return shapeRelationship;
+    public Relationship getRelationship() {
+        return relationship;
     }
 
-    public void setShapeRelationship(ShapeRelationship shapeRelationship) {
-        this.shapeRelationship = shapeRelationship;
+    public void setRelationship(Relationship relationship) {
+        this.relationship = relationship;
     }
+
+
 }

@@ -1,7 +1,9 @@
 package main.java.dtos;
 
 import main.java.models.Artifact;
+import main.java.models.Shape;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -10,9 +12,9 @@ import java.util.List;
 public class UiPageDto {
 
     private PageDto pageDto;
-    private List<ShapeDto> shapeDtos;
-    private List<ShapeRelationshipDto> shapeRelationshipDtos;
-    private List<PageDto> predecessorPages;
+    private List<ShapeDto> shapeDtos = new ArrayList<ShapeDto>();
+    private List<ShapeRelationshipDto> shapeRelationshipDtos = new ArrayList<ShapeRelationshipDto>();
+    private List<PageDto> predecessorPageDtos = new ArrayList<PageDto>();
 
     public PageDto getPageDto() {
         return pageDto;
@@ -38,11 +40,11 @@ public class UiPageDto {
         this.shapeRelationshipDtos = shapeRelationshipDtos;
     }
 
-    public List<PageDto> getPredecessorPages() {
-        return predecessorPages;
+    public List<PageDto> getPredecessorPageDtos() {
+        return predecessorPageDtos;
     }
 
-    public void setPredecessorPages(List<PageDto> predecessorPages) {
-        this.predecessorPages = predecessorPages;
+    public void setPredecessorPageDtos(List<PageDto> predecessorPageDtos) {
+        this.predecessorPageDtos = predecessorPageDtos;
     }
 }

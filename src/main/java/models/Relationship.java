@@ -1,11 +1,9 @@
 package main.java.models;
 
-import main.java.dtos.AnnotationDto;
-import main.java.dtos.LovDto;
-import main.java.dtos.TagDto;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -15,36 +13,40 @@ import java.util.List;
 @Table(name = "relationship")
 @EntityListeners(AuditingEntityListener.class)  //enables auto maintenance of create/update dates
 
-public class ShapeRelationship {
+public class Relationship {
     @Id
     private String id;
     private String fromShapeId;
     private String toShapeId;
 
+    @ManyToOne
     @JoinColumn(name = "diagram_id",
             foreignKey = @ForeignKey(name = "diagram_id_fk")
     )
     private Diagram diagram;
 
-    @ManyToOne
-    @JoinColumn(name = "lov_document_type_id",
-            foreignKey = @ForeignKey(name = "lov_document_type_id_FK")
-    )
-    private Lov lovRelationshipType;
+    private String relationshipType;
     private int startXLocation;
     private int startYLocation;
     private int endXLocation;
     private int endYLocation;
     private String relationshipGraphicId;
     private String shapeText;
+
     @OneToMany(mappedBy = "relationship",
             cascade = CascadeType.ALL,
             orphanRemoval = true)
-    private List<Tag> tags;
+    private List<Tag> tags = new ArrayList<Tag>();
+
     @OneToMany(mappedBy = "relationship",
             cascade = CascadeType.ALL,
             orphanRemoval = true)
-    private List<Annotation> annotations;
+    private List<Annotation> annotations = new ArrayList<Annotation>();
+
+    public Relationship()
+    {
+
+    }
 
     public String getId() {
         return id;
@@ -68,14 +70,6 @@ public class ShapeRelationship {
 
     public void setToShapeId(String toShapeId) {
         this.toShapeId = toShapeId;
-    }
-
-    public Lov getLovRelationshipType() {
-        return lovRelationshipType;
-    }
-
-    public void setLovRelationshipType(Lov lovRelationshipType) {
-        this.lovRelationshipType = lovRelationshipType;
     }
 
     public int getStartXLocation() {
@@ -155,7 +149,7 @@ public class ShapeRelationship {
         }
         if (!exists) {
             tags.add(newTag);
-            newTag.setShapeRelationship(this);
+            newTag.setRelationship(this);
         }
     }
 
@@ -171,7 +165,7 @@ public class ShapeRelationship {
         }
         if (exists) {
             tags.remove(oldTag);
-            oldTag.setShapeRelationship(null);
+            oldTag.setRelationship(null);
         }
     }
 
@@ -182,4 +176,46 @@ public class ShapeRelationship {
     public void setDiagram(Diagram diagram) {
         this.diagram = diagram;
     }
+
+    public String getRelationshipType() {
+        return relationshipType;
+    }
+
+    public void setRelationshipType(String relationshipType) {
+        this.relationshipType = relationshipType;
+    }
+
+    public void addAnnotation(Annotation newAnnotation) {
+
+        boolean exists = false;
+        for (Annotation annotation : this.getAnnotations())
+        {
+            if (annotation.getId().equals(newAnnotation.getId()))
+            {
+                exists = true;
+                break;
+            }
+        }
+        if (!exists) {
+            this.annotations.add(newAnnotation);
+            newAnnotation.setRelationship(this);
+        }
+    }
+
+    public void removeAnnotation(Annotation newAnnotation) {
+        boolean exists = false;
+        for (Annotation annotation : this.getAnnotations())
+        {
+            if (annotation.getId().equals(newAnnotation.getId()))
+            {
+                exists = true;
+                break;
+            }
+        }
+        if (exists) {
+            annotations.remove(newAnnotation);
+            newAnnotation.setRelationship(null);
+        }
+    }
+
 }

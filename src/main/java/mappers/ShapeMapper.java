@@ -21,7 +21,9 @@ public class ShapeMapper {
         shapeDto.setDrillDownPageId(shape.getDrillDownPageId());
         shapeDto.setHeight(shape.getHeight());
         shapeDto.setRadius(shape.getRadius());
-        shapeDto.setReferenceArtifactDto(ArtifactMapper.mapModelToDto(shape.getArtifact()));
+        if (shape.getArtifact() != null) {
+            shapeDto.setReferenceArtifactDto(ArtifactMapper.mapModelToDto(shape.getArtifact()));
+        }
         shapeDto.setSequenceNumber(shape.getSequenceNumber());
         shapeDto.setShapeText(shape.getShapeText());
         shapeDto.setShapeType(shape.getShapeType());

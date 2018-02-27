@@ -1,7 +1,32 @@
-angular.module('bluelamp')
-.controller('baseController', ['$scope', 'Library', function($scope, Library) {
+angular.module('bluelamp', [])
+.controller('baseController', ['$scope', 'Library', 'Lov', 'Tag',
+                                'Artifact', function($scope, Library, Lov, Tag, Artifact) {
 
+    var uiPageDtoTemplate = { pageDto : {id: -1, pageTitle: 'new page',
+                                        pageDescription: 'a description for the page',
+                                        libraryId: 0, artifactId: 0,
+   	                                    tagDtos: [], annotationDtos: []},
+   	shapeDtos: [],
+   	shapeRelationshipDtos: [],
+   	predecessorPageDtos: []};
+
+    $scope.editPropertyTitle = "SET TITLE HERE";
+    $scope.isArtifact = false;
+    $scope.isShape = false;
+    $scope.isPage = false;
+    $scope.notALine = true;
     $scope.currentlySelectedLibraryId = null;   //this is the library entry that has been clicked on for view/expansion
+    $scope.tagLibrary = []; //this will populate the dropdown of tag types
+    $scope.docTypeList = [];
+	$scope.currentPage = {};	//this is a reference to the uiPageDto for the page on the canvas
+
+	$scope.tags = [];
+
+    $scope.newTagTypeShortDesc = ""; //this is used when adding a new tag type
+    $scope.newTagTypeLongDesc = ""; //this is used when adding a new tag type
+
+	$scope.annotation = {}; //{id: $scope.generateId(), annotationText: ""}
+	$scope.annotations = [];    //this is the list that is bound to the page when editing
 
     $scope.libraryList = []; //this will initially be the level 1 library entries only. This is the
                              //list that the page binds to and maintains the library info and levels,
@@ -15,9 +40,53 @@ angular.module('bluelamp')
     $scope.selectedLibrary3 = {};
     $scope.library3List = [];
 
+    $scope.selectedArtifact = {};
+    $scope.artifactList = [];    //this will be loaded whenever user clicks on a library entry
+
     $scope.expandedLibraryItems = [];
 
+    $scope.itemToHighLight = null;
+
     $scope.errors = [];      //any errors reported will be a list of ErrorDto
+    $scope.popupErrors = [];
+
+    //the following fields are for the artifactInfo.ftl popup
+    $scope.currentArtifact = null;
+
+    $scope.library1Description = "";
+    $scope.library2Description = "";
+    $scope.library3Description = "";
+
+    $scope.navigateToDiagram = function(pPageId)
+    {
+         window.location = "/canvas/page/" + pPageId;
+    }
+
+    //the addEditProperties popup is configured based on the type of object
+    //being edited - options are "page" , "shape", or "artifact"
+    $scope.setEditType = function(pObjectType) {
+         $scope.isArtifact = false;
+         $scope.isShape = false;
+         $scope.isPage = false;
+         $scope.notALine = true;
+
+         if (pObjectType == "artifact")
+         {
+            $scope.isArtifact = true;
+         } else if (pObjectType == "shape")
+         {
+            $scope.isShape = true;
+         } else if (pObjectType == "page")
+         {
+            $scope.isPage = true;
+         }
+         else if (pObjectType == "line")
+         {
+            $scope.isShape = true;
+            $scope.notAline = false;
+         }
+    }
+
     //function to create an id for use as page id, shape id, connector id, etc
 	$scope.generateId = function() {
 		return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
@@ -42,78 +111,117 @@ angular.module('bluelamp')
     //the outer item (clicks responded from in to out).
     $scope.showHide = function(item)
     {
+
+       //default the item to highlight to the currently highlighted item
+       if ($scope.currentlySelectedLibraryId != null)
+       {
+           $scope.itemToHighLight =  $scope.currentlySelectedLibraryId;
+       }
+
+       //remove the highlight from all library items - we'll reselect the highlighted
+       //item at the bottom of this method
+       $(".libraryItem").removeClass("selected");
+
         //we will return the selected library id
-       currentlySelectedLibraryId = null;
+       $scope.currentlySelectedLibraryId = null;
+       $scope.currentlySelectLibraryItem = this;
 
-        //if there is no library2, then it means that the method is being called for a level 1 item
-        if (item.library2 == null)
+
+        if (item.library3 != null)
         {
-            //but, if level2Clicked is true, it means this is just an outer-click of an
-            //inner level 2 item click.
-            if (!level2Clicked)
+            $scope.currentlySelectedLibraryId = item.library3.id;
+            item.library3.isSelected = true;
+            level3Clicked = true;
+        }
+        else
+           {
+
+            //if there is no library2, then it means that the method is being called for a level 1 item
+            if (item.library2 == null)
             {
-                item.library1.expanded = !item.library1.expanded;
-                currentlySelectedLibraryId = item.library1.id;
-                //if the item was expanded - we need to load the children
-                if (item.library1.expanded)
+                //but, if level2Clicked is true, it means this is just an outer-click of an
+                //inner level 2 item click.
+                if (!level2Clicked)
                 {
-                     $scope.expandedLibraryItems.push(item.library1.id);
-
-                     Library.loadSubLibrary(item.library1.id).then(function(data)
-                     {
-                       //reset/refresh the child list
-                       item.library1.subLibraryList = data;
-
-                     });
-                }
-                else
-                {
-                    for (idx = 0; idx < $scope.expandedLibraryItems.length; idx++)
+                    item.library1.expanded = !item.library1.expanded;
+                    $scope.currentlySelectedLibraryId = item.library1.id;
+                    //if the item was expanded - we need to load the children
+                    if (item.library1.expanded)
                     {
-                        if ($scope.expandedLibraryItems[idx] == item.library1.id )
+                         $scope.expandedLibraryItems.push(item.library1.id);
+
+                         Library.loadSubLibrary(item.library1.id).then(function(data)
+                         {
+                           //reset/refresh the child list
+                           item.library1.subLibraryList = data;
+
+                         });
+                    }
+                    else
+                    {
+                        for (idx = 0; idx < $scope.expandedLibraryItems.length; idx++)
                         {
-                            $scope.expandedLibraryItems.splice(idx,1);
+                            if ($scope.expandedLibraryItems[idx] == item.library1.id )
+                            {
+                                $scope.expandedLibraryItems.splice(idx,1);
+                            }
                         }
                     }
                 }
-            }
-            else
-            {
-                level2Clicked = false;
-            }
-        }
-        else
-        {
-            item.library2.expanded = !item.library2.expanded;
-            //if the item was expanded - we need to load the children
-            currentlySelectedLibraryId = item.library2.id;
-
-            if (item.library2.expanded)
-            {
-                $scope.expandedLibraryItems.push(item.library2.id);
-
-                Library.loadSubLibrary(item.library2.id).then(function(data)
+                else
                 {
-                    //reset/refresh the child list
-                    item.library2.subLibraryList = data;
-
-                });
-            }
-            else
-            {
-                for (idx = 0; idx < $scope.expandedLibraryItems.length; idx++)
-                {
-                    if ($scope.expandedLibraryItems[idx] == item.library2.id )
-                    {
-                        $scope.expandedLibraryItems.splice(idx,1);
-                    }
+                    level2Clicked = false;
                 }
             }
+            else
+            {
+                if (!level3Clicked)
+                {
+                    item.library2.expanded = !item.library2.expanded;
+                    //if the item was expanded - we need to load the children
+                    $scope.currentlySelectedLibraryId = item.library2.id;
 
-            level2Clicked = true;
+                    if (item.library2.expanded)
+                    {
+                        $scope.expandedLibraryItems.push(item.library2.id);
+
+                        Library.loadSubLibrary(item.library2.id).then(function(data)
+                        {
+                            //reset/refresh the child list
+                            item.library2.subLibraryList = data;
+
+                        });
+                    }
+                    else
+                    {
+                        for (idx = 0; idx < $scope.expandedLibraryItems.length; idx++)
+                        {
+                            if ($scope.expandedLibraryItems[idx] == item.library2.id )
+                            {
+                                $scope.expandedLibraryItems.splice(idx,1);
+                            }
+                        }
+                    }
+
+                    level2Clicked = true;
+                }
+                else
+                {
+                    level3Clicked = false;
+                    level2Clicked = true;
+                }
+            }
         }
 
-        return currentlySelectedLibraryId;
+        if ($scope.currentlySelectedLibraryId != null)
+        {
+            itemToHighLight = $scope.currentlySelectedLibraryId;
+        }
+
+        $("#"+ itemToHighLight).first().addClass("selected");
+//        angular.element("#" + itemToHighLight).addClass("selected");
+        return $scope.currentlySelectedLibraryId;
+
     }
 
     //this function refreshes the base library list with the incoming list.
@@ -254,15 +362,15 @@ angular.module('bluelamp')
         $scope.selectedLibrary1 = pSelectedLibrary1;
         $scope.selectedLibrary2 = pSelectedLibrary2;
         $scope.selectedLibrary3 = pSelectedLibrary3;
-        $scope.selectedArtifact = {};
+     //   $scope.selectedArtifact = {};
 
 		//set a default entry
-		$scope.library1List.push({id: -1, level: 0, description: '',
-		                          abbreviation: "------------------------------", parentLibraryId : 0});
-        $scope.library2List.push({id: -1, level: 1, description: '',
-                                  abbreviation: "------------------------------", parentLibraryId : 0});
-        $scope.library3List.push({id: -1, level: 2, description: '',
-                                  abbreviation: "------------------------------", parentLibraryId : 0});
+		$scope.library1List.push({id: null, level: 0, description: " ",
+		                          abbreviation: " ", parentLibraryId : 0});
+        $scope.library2List.push({id: null, level: 1, description: " ",
+                                  abbreviation: " ", parentLibraryId : 0});
+        $scope.library3List.push({id: null, level: 2, description: " ",
+                                  abbreviation: " ", parentLibraryId : 0});
 
        //all 0 level library entries have '-1' as the parent id
        Library.loadSubLibrary("-1").then(function(data)
@@ -273,7 +381,7 @@ angular.module('bluelamp')
                 $scope.selectedLibrary1 = pSelectedLibrary1;
                 Library.loadSubLibrary(pSelectedLibrary1.id).then(function(data)
                 {
-                    $scope.library2List = $scope.library1List.concat(data);
+                    $scope.library2List = $scope.library2List.concat(data);
                     if (pSelectedLibrary2 != null)
                     {
                         $scope.selectedLibrary2 = pSelectedLibrary2;
@@ -282,16 +390,19 @@ angular.module('bluelamp')
                             $scope.library3List = $scope.library3List.concat(data);
                             if (pSelectedLibrary3 != null)
                             {
-                                $scope.selectedLibrary3 = pSelectedLibrary3
+                                $scope.selectedLibrary3 = pSelectedLibrary3;
+                                $scope.loadArtifactList(pSelectedLibrary3.id);
                             }
                             else
                             {
+                                $scope.loadArtifactList(pSelectedLibrary2.id);
                                 $scope.selectedLibrary3 = $scope.library3List[0];
                             }
                         })
                     }
                     else
                     {
+                        $scope.loadArtifactList(pSelectedLibrary1.id);
                         $scope.selectedLibrary2 = $scope.library2List[0];
                         $scope.selectedLibrary3 = $scope.library3List[0];
                     }
@@ -302,6 +413,8 @@ angular.module('bluelamp')
                 $scope.selectedLibrary1 = $scope.library1List[0];
                 $scope.selectedLibrary2 = $scope.library2List[0];
                 $scope.selectedLibrary3 = $scope.library3List[0];
+                $scope.loadArtifactList(null);
+
             }
        });
 	}
@@ -311,8 +424,8 @@ angular.module('bluelamp')
 	{
 		$scope.library2List = [];
 		//set a default entry
-    	 $scope.library2List.push({id: -1, level: 2, description: '',
-                                          abbreviation: "------------------------------", parentLibraryId : 0});
+		$scope.library2List.push({id: null, level: 2, description: " ",
+        		                          abbreviation: " ", parentLibraryId : 0});
 
 		if ($scope.selectedLibrary1 != null)
 		{
@@ -320,6 +433,7 @@ angular.module('bluelamp')
             {
                  $scope.library2List = $scope.library2List.concat(data);
                  $scope.selectedLibrary2 = $scope.library2List[0];
+                 $scope.loadArtifactList($scope.selectedLibrary1.id);
                  $scope.loadLibrary3List();
             })
 		}
@@ -327,6 +441,8 @@ angular.module('bluelamp')
 		{
             $scope.selectedLibrary2 = $scope.library2List[0];
             $scope.loadLibrary3List();
+            $scope.loadArtifactList(null);
+
         }
 	}
 
@@ -335,8 +451,8 @@ angular.module('bluelamp')
 	{
 		$scope.library3List = [];
 		//set a default entry
-		$scope.library3List.push({id: -1, level: 3, description: '',
-                                                  abbreviation: "------------------------------", parentLibraryId : 0});
+		$scope.library3List.push({id: null, level: 2, description: " ",
+		                          abbreviation: " ", parentLibraryId : 0});
 
 		if ($scope.selectedLibrary2 != null)
 		{
@@ -344,13 +460,39 @@ angular.module('bluelamp')
               {
                  $scope.library3List = $scope.library3List.concat(data);
          		 $scope.selectedLibrary3 = $scope.library3List[0];
-              })
+              });
+              $scope.loadArtifactList($scope.selectedLibrary2.id);
 		}
 		else
 		{
 		    $scope.selectedLibrary3 = $scope.library3List[0];
+            $scope.loadArtifactList(null);
+
 		}
 	}
+
+    $scope.loadArtifactList = function(pSelectedLibraryId)
+    {
+        var libraryId = pSelectedLibraryId;
+
+        if (libraryId != null)
+        {
+            Artifact.loadArtifacts(libraryId).then(function (response) {
+                if (response.status == "406")
+                {
+                    $scope.errors = response.data;
+                }
+                else
+                {
+                    $scope.artifactList = response.data;
+//                    if ($scope.selectedArtifact != null)
+//                    {
+//
+//                    }
+                }
+            });
+        }
+    }
 
 	//use the incoming library id to set the the three library lists
     $scope.initLibraryLists = function(pLibraryId)
@@ -363,29 +505,249 @@ angular.module('bluelamp')
         var library2 = null;
         var library3 = null;
 
-        //get the library entry and its ancestors
-        var libraryEntry = Library.getLibraryEntry(pLibraryId);
-        libraryEntry.then (function (libraryList) {
+        if (pLibraryId != null)
+        {
+            //get the library entry and its ancestors
+            var libraryEntry = Library.getLibraryEntry(pLibraryId);
+            libraryEntry.then (function (libraryList) {
 
-            if (libraryList.length == 3)
-            {
-                library3 = libraryList[0];
-                library2 = libraryList[1];
-                library1 = libraryList[2];
-            }
-            else if (libraryList.length == 2)
-            {
-                library2 = libraryList[0];
-                library1 = libraryList[1];
-            }
-            else if (libraryList.length == 1)
-            {
-                library1 = libraryList[0];
-            }
+                if (libraryList.length == 3)
+                {
+                    library3 = libraryList[0];
+                    library2 = libraryList[1];
+                    library1 = libraryList[2];
+                }
+                else if (libraryList.length == 2)
+                {
+                    library2 = libraryList[0];
+                    library1 = libraryList[1];
+                }
+                else if (libraryList.length == 1)
+                {
+                    library1 = libraryList[0];
+                }
 
-            $scope.loadLibrary1List(library1, library2, library3);
+                $scope.loadLibrary1List(library1, library2, library3);
+            });
+        }
+        else
+        {
+           $scope.loadLibrary1List(library1, library2, library3);
+        }
+    }
+
+    //invoked when the add/edit artifact popup is displayed
+    $scope.loadTags = function()
+    {
+        Lov.getLovByTable('Tag').then(function(lovTableEntries) {
+
+           $scope.tagLibrary = lovTableEntries;
         });
     }
+
+    //invoked when the add/edit artifact popup is displayed
+    $scope.loadDocTypes = function()
+    {
+        $scope.docTypeList = [];
+
+        $scope.docTypeList.push($scope.defaultDocType);
+
+        Lov.getLovByTable('DocType').then(function(lovTableEntries) {
+
+             $scope.docTypeList = $scope.docTypeList.concat(lovTableEntries);
+        });
+    }
+
+    //creates a new UiPageDto
+	 $scope.createNewUiPageDto = function()
+	{
+		var uiPageDto =  JSON.parse(JSON.stringify(uiPageDtoTemplate));
+		uiPageDto.pageDto.id = $scope.generateId();
+
+		return uiPageDto;
+	}
+
+    //pCurrentPage is a uiPageDto object
+    $scope.setCurrentPage = function(pCurrentPage)
+    {
+        $scope.$apply(function () {
+            $scope.currentPage = pCurrentPage;
+        });
+    }
+
+    //this function is called when a user clicks to edit the page properties - it will bind the necessary parts of the pages's properties for page display
+    //we don't want to bind directly to currentPage or there won't be a way to undo the changes - we want the user to click 'save' so the values get
+    //propogated to the page
+    $scope.setForPageEdit = function()
+    {
+        //force a refresh back to the html
+        $scope.$apply(function () {
+
+            $scope.errors = [];
+            if ($scope.currentPage.pageDto.artifactId != null)
+            {
+                $scope.selectedArtifact.referenceArtifactId =
+                $scope.currentPage.pageDto.artifactId
+            }
+            $scope.initLibraryLists( $scope.currentPage.pageDto.libraryId);
+            $scope.annotations = $scope.currentPage.pageDto.annotationDtos;
+            $scope.tags = $scope.currentPage.pageDto.tagDtos;
+
+            $scope.editPropertyTitle = "Edit Page Properties";
+            $scope.setEditType("page");
+            $scope.annotation = {id: $scope.generateId(), annotationText: ""};
+
+        });
+    }
+
+    //push the page changes to the currentPage Dto
+	$scope.savePageEdits = function()
+	{
+		$scope.currentPage.pageDto.tagDtos = $scope.tags;
+		$scope.currentPage.pageDto.annotationDtos = $scope.annotations;
+
+         //the library associated with an artifact is the lowest selected level
+         if ($scope.selectedLibrary3.id != null)
+         {
+            $scope.currentPage.pageDto.libraryId = $scope.selectedLibrary3.id;
+         }
+         else if ($scope.selectedLibrary2.id != null)
+         {
+            $scope.currentPage.pageDto.libraryId = $scope.selectedLibrary2.id;
+         }
+         else
+         {
+           $scope.currentPage.pageDto.libraryId = $scope.selectedLibrary1.id;
+         }
+
+		if ($scope.selectedArtifact == null)
+		{
+			$scope.currentPage.pageDto.artifactId = -1;
+		}
+		else
+		{
+			$scope.currentPage.pageDto.artifactId = $scope.selectedArtifact.referenceArtifactId;
+		}
+	}
+
+    //called when the user clicks the 'add' button on the edit artifact popup for a new annotation
+	$scope.addAnnotation = function()
+	{
+		if ($scope.annotation.annotationText != null)
+		{
+		    $scope.annotation.id =  $scope.generateId();
+			$scope.annotations.push($scope.annotation);
+			$scope.annotation = {id: $scope.generateId(), annotationText: ""};
+		}
+	}
+
+	//called when the user checks a checkbox in the list of existing annotations
+	$scope.deleteAnnotation = function(annotationRow)
+	{
+		for (var idx = 0; idx < $scope.annotations.length; idx++)
+		{
+			if (annotationRow == $scope.annotations[idx] )
+			{
+				$scope.annotations.splice(idx,1 );
+				break;
+			}
+		}
+	}
+
+     //called when the user clicks the 'add' button on the editShape popup for a new tag
+	$scope.addTag = function()
+	{
+		if (($scope.selectedTagType != null) && ($scope.selectedTagValue != null))
+		{
+
+		    var newTagDto = {id: $scope.generateId(), tagValue: $scope.selectedTagValue,
+		        lovDto: $scope.selectedTagType};
+			$scope.tags.push(newTagDto);
+
+		    $scope.selectedTagType = {};
+		    $scope.selectedTagValue = "";
+		}
+	}
+
+    //called when the user checks a checkbox in the list of existing tags to delete an entry
+    $scope.deleteTag = function(tagRow)
+    {
+        for (var idx = 0; idx < $scope.tags.length; idx++)
+        {
+            if (tagRow.id == $scope.tags[idx].id )
+            {
+                $scope.tags.splice(idx,1 );
+                break;
+            }
+        }
+    }
+
+    //invoked when the user clicks the 'tags' link on the artifact popup to add a new tag
+    $scope.openNewTag = function()
+    {
+        $scope.popupErrors = [];
+        $scope.newTagTypeShortDesc = "";
+        $scope.newTagTypeLongDesc = "";
+        addTagType.dialog("open");
+    }
+
+    //invoked when the user clicks save on the new tag type popup
+    $scope.saveNewTag = function()
+    {
+        var lovDto = {id: $scope.generateId(),
+                      lovTable : 'Tag',
+                      shortName: $scope.newTagTypeShortDesc,
+                      longName: $scope.newTagTypeLongDesc};
+
+         //wrap in apply so it refreshes page
+        $scope.$apply(function () {
+            Tag.addTagType(lovDto ).then (function (response) {
+
+                if (response.status == "406")
+                {
+                    $scope.popupErrors = response.data;
+                }
+                else
+                {
+                    $scope.tagLibrary.push(lovDto);
+                    addTagType.dialog("close");
+                }
+            });
+        })
+    }
+
+    $scope.showArtifact = function()
+	{
+	    if ($scope.selectedArtifact != null)
+	    {
+             Artifact.getArtifactEntry($scope.selectedArtifact.id).then (function (results)
+             {
+                    $scope.currentArtifact = results.data;
+
+                    Library.getLibraryEntry($scope.currentArtifact.libraryId).then (function (data)
+                    {
+
+                        if (data.length == 1)
+                        {
+                            $scope.library1Description = data[0].description;
+                        }
+                        else if (data.length == 2)
+                        {
+                            $scope.library1Description = data[0].description;
+                            $scope.library2Description = data[1].description;
+                        }
+                        else
+                        {
+                            $scope.library1Description = data[0].description;
+                            $scope.library2Description = data[1].description;
+                            $scope.library3Description = data[2].description;
+                        }
+
+                        artifactInfoDialog.dialog("open");
+                    });
+             });
+	    }
+	}
 
 }]);
 
