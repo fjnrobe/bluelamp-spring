@@ -10,6 +10,7 @@ import main.java.utilities.StringUtils;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -22,16 +23,19 @@ public class DiagramManager
     private final LibraryLevelRepository libraryLevelRepository;
     private final LovRepository lovRepository;
     private final ArtifactRepository artifactRepository;
+    private final ShapeRepository shapeRespository;
 
     public DiagramManager(DiagramRepository diagramRepository,
                           LibraryLevelRepository libraryLevelRepository,
                           LovRepository lovRepository,
-                          ArtifactRepository artifactRepository)
+                          ArtifactRepository artifactRepository,
+                          ShapeRepository shapeRepository)
     {
         this.diagramRepository = diagramRepository;
         this.libraryLevelRepository = libraryLevelRepository;
         this.lovRepository = lovRepository;
         this.artifactRepository = artifactRepository;
+        this.shapeRespository = shapeRepository;
     }
 
     public List<ErrorDto> validateAndSaveDiagram(PageDto pageDto) {
@@ -292,6 +296,23 @@ public class DiagramManager
         for (Relationship relationship : diagram.getRelationships())
         {
             uiPageDto.getShapeRelationshipDtos().add(ShapeRelationshipMapper.mapModelToDto(relationship));
+        }
+
+        //get all shapes that drill down to this page. From this list
+        //we can get a unique list of pages for these shapes
+        List<Shape> predecessorShapes =
+                this.shapeRespository.findByDrillDownPageId(uiPageDto.getPageDto().getId());
+
+        HashMap<String, Diagram> predecessorPages = new HashMap<String, Diagram>();
+        for (Shape precedessorShape : predecessorShapes)
+        {
+            predecessorPages.put( precedessorShape.getDiagram().getId(),
+                    precedessorShape.getDiagram() );
+        }
+
+        for (Diagram predecessorPage : predecessorPages.values())
+        {
+            uiPageDto.getPredecessorPageDtos().add(DiagramMapper.mapModelToDto(predecessorPage));
         }
 
         return uiPageDto;

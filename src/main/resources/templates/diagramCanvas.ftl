@@ -63,8 +63,8 @@
 					Navigate to Predecessor Page:
 				</td>
 				<td>
-					<select ng-model="selectedPredecessorPage" ng-options="page as page.pageTitle for page in currentPage.predecessorPages track by page.pageId"></select>
-					<button onClick="navigateToPage()">Go</button>
+					<select ng-model="selectedPredecessorPage" ng-options="page as page.pageTitle for page in currentPage.predecessorPageDtos track by page.id"></select>
+					<button ng-click="navigateToPage()">Go</button>
 				</td>
 				<td>
 					<button onClick="handleEditPageProperties()">Edit Page Properties</button>
@@ -86,11 +86,8 @@
 		<button class="palatte" type="button" onClick="startElipse();">draw elipse</button>
 
 		<button class="palatte" type="button" onClick="clearPage(null);">clear</button>	
-		<button type="button" onClick="logInfo('yes');">log info</button>
 		<button type="button" onClick="savePage();">save Page</button>
-		<button type="button" onClick="loadPage(UiPageDto);">load Page</button>
-		<button type="button" onClick="logUiPageDto('yes');">log page dto</button>
-		
+
 		<!--these are the various popup menu dialogs -->
 		<div id="dialog-confirm" title="Delete Shape?">
 			<p><span class="ui-icon ui-icon-alert" style="float:left; margin:12px 12px 20px 0;"></span>Are you sure you want to delete this shape?<br/>{{shapeDescription}}</p>
@@ -107,6 +104,7 @@
 		<#include "/includes/addTagType.ftl" />
 
 		<!-- this is the popup for editing an off page connector -->
+		<!--
 		<div id="editConnector" title = "Edit Connector">
 			<form>
 				<fieldset> 
@@ -235,7 +233,8 @@
 				</fieldset>
 			</form>	
 		</div>
-		
+		-->
+
 		<!-- this is the popup when hovering over shape -->
 		<div id="hoverShape" title = "Shape Information">
 			<table class="tblFormatOnly">				

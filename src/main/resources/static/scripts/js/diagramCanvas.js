@@ -873,7 +873,7 @@
 		this.currentShape.properties.shapeText = pText;
 		var labelArray = pText.split('\n');
 
-		//if this shape has a drillwdown - put the drill down title above the shape text
+		//if this shape has a drilldown - put the drill down title above the shape text
 		if (this.currentShape.properties.drillDownPageId != -1) {
 		
 			labelArray.unshift(this.currentShape.properties.drillDownPageTitle);
@@ -911,14 +911,7 @@
 				seqTitle.setUnderlined(true);
 				seqTitle.setFontColor("rgb(0,0,255)");
 			}
-			
-			//on page connectors also display as a hyperlink
-			if (this.currentShape.shape == "onConnector")
-			{
-				seqTitle.setUnderlined(true);
-				seqTitle.setFontColor("rgb(0,0,255)");
-			}
-			
+
 			var centerPoint = this.currentShape.shapeHelper.getCenterPoint();
 		
 			seqTitle.setX(centerPoint.getX());
@@ -2374,11 +2367,11 @@
 	};
   
 	//the locationXY is a jsgl.Vector2D location
-	function createOffPageConnector(pText, locationXY)
+	function createOnPageConnector(pText, locationXY)
 	{
 		var newShape = myPanel.createGroup();			
 		newShape.id = getController().generateId();
-		newShape.shape = 'offConnector';
+		newShape.shape = 'onConnector';
 		newShape.shapeEventHandler = new OffPageEventHandler(newShape);		
 		newShape.shapeHelper = new OffPageShapeHelper(newShape);
 		newShape.properties = new OffPageProperties(newShape, getNextSequenceNumber());				
@@ -2413,28 +2406,26 @@
 			newShape.shape = 'circle';
 			
 			newShape.shapeEventHandler = new CircleShapeEventHandler(newShape);
-			//newShape.shapeEventHandler.init();
+
 			newShape.shapeHelper = new CircleShapeHelper(newShape);
 			newShape.properties = new CircleProperties(newShape, getNextSequenceNumber(), defaultRadius);
 		}
-		if (shape == 'onConnector')
-		{
-			newShape = panel.createGroup();			
-			newShape.id = getController().generateId();
-			newShape.shape = 'onConnector';
-			
-			newShape.shapeEventHandler = new CircleShapeEventHandler(newShape);		
-			//newShape.shapeEventHandler.init();
-			newShape.shapeHelper = new CircleShapeHelper(newShape);
-			newShape.properties = new CircleProperties(newShape, getNextSequenceNumber(), 25);
-		}
-		else if (shape == 'offConnector')
+		if (shape == 'offConnector')
 		{
 			newShape = panel.createGroup();			
 			newShape.id = getController().generateId();
 			newShape.shape = 'offConnector';
+			
+			newShape.shapeEventHandler = new CircleShapeEventHandler(newShape);		
+			newShape.shapeHelper = new CircleShapeHelper(newShape);
+			newShape.properties = new CircleProperties(newShape, getNextSequenceNumber(), 25);
+		}
+		else if (shape == 'onConnector')
+		{
+			newShape = panel.createGroup();			
+			newShape.id = getController().generateId();
+			newShape.shape = 'onConnector';
 			newShape.shapeEventHandler = new OffPageEventHandler(newShape);
-			//newShape.shapeEventHandler.init();
 			newShape.shapeHelper = new OffPageShapeHelper(newShape);
 			newShape.properties = new OffPageProperties(newShape, getNextSequenceNumber());					
 		}
@@ -2444,7 +2435,6 @@
 			newShape.id = getController().generateId();
 			newShape.shape = 'line';
 			newShape.shapeEventHandler = new LineShapeEventHandler(newShape);
-			//newShape.shapeEventHandler.init();
 			newShape.properties = new LineProperties(newShape, getNextSequenceNumber());
 			newShape.properties.relationshipType = options;
 			newShape.shapeHelper = new LineShapeHelper(newShape);
@@ -2455,7 +2445,6 @@
 			newShape.id = getController().generateId();
 			newShape.shape = 'diamond';
 			newShape.shapeEventHandler = new DiamondShapeEventHandler(newShape);
-			//newShape.shapeEventHandler.init();
 			newShape.shapeHelper = new DiamondShapeHelper(newShape);
 			newShape.properties = new DiamondProperties(newShape, getNextSequenceNumber(), defaultDiamondWidth, defaultDiamondHeight);					
 		}
@@ -2465,7 +2454,6 @@
 			newShape.id = getController().generateId();
 			newShape.shape = 'square';
 			newShape.shapeEventHandler = new SquareShapeEventHandler(newShape);
-			//newShape.shapeEventHandler.init();
 			newShape.shapeHelper = new SquareShapeHelper(newShape);
 			newShape.properties = new SquareProperties(newShape, getNextSequenceNumber(), defaultSquareWidth, defaultSquareHeight);					
 		}
@@ -2475,7 +2463,6 @@
 			newShape.id = getController().generateId();
 			newShape.shape = 'rectangle';
 			newShape.shapeEventHandler = new SquareShapeEventHandler(newShape);
-			//newShape.shapeEventHandler.init();
 			newShape.shapeHelper = new SquareShapeHelper(newShape);
 			newShape.properties = new SquareProperties(newShape, getNextSequenceNumber(),defaultRecWidth, defaultRecHeight);					
 		}
@@ -2485,7 +2472,6 @@
 			newShape.id = getController().generateId();
 			newShape.shape = 'elipse';
 			newShape.shapeEventHandler = new ElipseShapeEventHandler(newShape);
-			//newShape.shapeEventHandler.init();
 			newShape.shapeHelper = new ElipseShapeHelper(newShape);
 			newShape.properties = new ElipseProperties(newShape, getNextSequenceNumber());					
 		}
@@ -2759,67 +2745,7 @@
 	{
 		return activeShapeId != 0;
 	}
-	
-	function logInfo(clearfirst)
-	{
-	   if (clearfirst)
-	   {
-		 console.clear();
-		}
-		console.log('page shape count: ' + pageShapes.length);
-		console.log('shape count on panel: ' +  myPanel.getElementsCount());
-		//for (var i = 0; i < myPanel.getElementsCount(); i++)
-		//{
-		//	var shape = myPanel.getElementAt(i);
-		//	console.log('shape is ' + shape.shape);
-		//	console.log('shape id: ' + shape.id);
-		//}
-		
-		console.log('pageShapes:');
-		for (var i = 0 ; i < pageShapes.length; i++)
-		{
-			if (pageShapes[i].shape == 'line')
-			{
-				console.log('    shape id: ' + pageShapes[i].id + ' is a line');
-			}
-			else
-			{
-				console.log('    shape id: ' + pageShapes[i].id);		
-				console.log('    drillDownId: ' + pageShapes[i].properties.drillDownPageId);
-				console.log('    text: ' + pageShapes[i].properties.shapeText);
-						
-				console.log('    borderPoint info:');
-				for (var y = 0; y < pageShapes[i].properties.borderPoints.length; y++)
-				{
-					console.log('        borderpoint: ' + y + ', x: ' + pageShapes[i].properties.borderPoints[y].location.getX() + 
-					                                          ', y: ' + pageShapes[i].properties.borderPoints[y].location.getY());							
-					for (var z = 0; z < pageShapes[i].properties.borderPoints[y].linkedLines.length; z++)
-					{
-						console.log('        lines: ' + y + ', line info at: ' + z + ' lineId: ' + pageShapes[i].properties.borderPoints[y].linkedLines[z].lineId + 
-								', startEnd: ' + pageShapes[i].properties.borderPoints[y].linkedLines[z].startEndInd + 
-								', linkedShapeId: ' + pageShapes[i].properties.borderPoints[y].linkedLines[z].linkedShapeId);
-					}
-				}
-			}
-		}
-		console.log('currently active shape id: ' + activeShapeId);
-		
-		if ((this.lastActiveShape != null) && (this.lastActiveShape.shape = 'select'))
-		{
-			console.log('startX ' + this.lastActiveShape.properties.startX + ', start y ' + this.lastActiveShape.properties.startY);
-			console.log('endX ' + this.lastActiveShape.properties.endX + ', end y ' + this.lastActiveShape.properties.endY);
-		}
-		
 
-	};
-	
-	function logUiPageDto(dto)
-	{
-		 console.clear();
-
-		console.log(dto);
-	}
-	
       function startLine(pLineType)
 	  {
 	     createNewShape('line', myPanel, pLineType);		 
@@ -2851,12 +2777,12 @@
 		
 	  }
 	  
-	  function startOnPageConnector() {
-		createNewShape('onConnector', myPanel, null);		  		
+	  function startOffPageConnector() {
+		createNewShape('offConnector', myPanel, null);
 	  }
 	  
-	  function startOffPageConnector() {
-		createNewShape('offConnector', myPanel, null);		  		
+	  function startOnPageConnector() {
+		createNewShape('onConnector', myPanel, null);
 	  }
 	  
       function startDiamond()
@@ -3295,13 +3221,13 @@
 		{
 			createEllipse(myPanel, shapeDto);
 		}
-		else if (shapeDto.shapeType == 'onConnector')
-		{
-			createOnConnector(myPanel, shapeDto);
-		}
 		else if (shapeDto.shapeType == 'offConnector')
 		{
 			createOffConnector(myPanel, shapeDto);
+		}
+		else if (shapeDto.shapeType == 'onConnector')
+		{
+			createOnConnector(myPanel, shapeDto);
 		}	
 	}
 
@@ -3336,7 +3262,35 @@
 		
 		pageShapes.push(newShape);
 	}
-	
+
+	function createOffConnector(myPanel, shapeDto)
+    {
+        newShape = myPanel.createGroup();
+        newShape.id = shapeDto.id;
+        newShape.shape = 'offConnector';
+        newShape.setLocationXY(shapeDto.centerX, shapeDto.centerY);
+        newShape.shapeEventHandler = new CircleShapeEventHandler(newShape);
+        newShape.shapeHelper = new CircleShapeHelper(newShape);
+        newShape.properties = new CircleProperties(newShape, shapeDto.sequenceNumber, shapeDto.radius);
+        newShape.properties.tags = shapeDto.tagDtos;
+        newShape.properties.annotations = shapeDto.annotationDtos;
+        newShape.properties.drillDownPageId = shapeDto.drillDownPageId;
+
+        newCircle = myPanel.createCircle();
+        newCircle.setRadius(shapeDto.radius);
+        newCircle.getStroke().setWeight(1);
+        newCircle.getStroke().setColor("rgb(0,0,255)");
+        newShape.addElement(newCircle);
+
+        newShape.shapeHelper.addSequence();
+        newShape.shapeHelper.setText(shapeDto.shapeText);
+        newShape.properties.setBorderPoints();
+
+
+        myPanel.addElement(newShape);
+        pageShapes.push(newShape);
+    }
+
 	function  createSquare(myPanel, shapeDto)
 	{
 		var newShape = myPanel.createGroup();
@@ -3441,38 +3395,13 @@
 		pageShapes.push(newShape);
 	}
 	
+
+	
 	function createOnConnector(myPanel, shapeDto)
 	{
 		newShape = myPanel.createGroup();			
 		newShape.id = shapeDto.id;
 		newShape.shape = 'onConnector';
-		newShape.setLocationXY(shapeDto.centerX, shapeDto.centerY);	
-		newShape.shapeEventHandler = new CircleShapeEventHandler(newShape);				
-		newShape.shapeHelper = new CircleShapeHelper(newShape);
-		newShape.properties = new CircleProperties(newShape, shapeDto.sequenceNumber, shapeDto.radius);
-	    newShape.properties.tags = shapeDto.tagDtos;
-        newShape.properties.annotations = shapeDto.annotationDtos;
-
-		newCircle = myPanel.createCircle();				
-		newCircle.setRadius(shapeDto.radius);
-		newCircle.getStroke().setWeight(1);
-		newCircle.getStroke().setColor("rgb(0,0,255)");
-		newShape.addElement(newCircle);	
-
-		newShape.shapeHelper.addSequence();		
-		newShape.shapeHelper.setText(shapeDto.shapeText);
-		newShape.properties.setBorderPoints();
-		newShape.properties.drillDownPageId = shapeDto.drillDownPageId;	
-
-		myPanel.addElement(newShape);		
-		pageShapes.push(newShape);		
-	}
-	
-	function createOffConnector(myPanel, shapeDto)
-	{
-		newShape = myPanel.createGroup();			
-		newShape.id = shapeDto.id;
-		newShape.shape = 'offConnector';
 		newShape.shapeEventHandler = new OffPageEventHandler(newShape);
 		
 		newShape.shapeHelper = new OffPageShapeHelper(newShape);
@@ -3632,7 +3561,7 @@
             shape.referenceArtifactDto = shape.properties.artifact;
         }
 
-		if ((shape.shape == 'circle') || (shape.shape == 'onConnector'))
+		if ((shape.shape == 'circle') || (shape.shape == 'offConnector'))
 		{
 			newShape.radius = shape.getElementAt(0).getRadius();
 		}
@@ -3725,7 +3654,7 @@
                     releasePen(getController().getCurrentShape(), "saveEditShape");
                     getController().saveShape();
                     editShapeDialog.dialog("close");
-                    editConnectorDialog.dialog("close");
+              //      editConnectorDialog.dialog("close");
                 }
 			}
 		}
@@ -4031,14 +3960,8 @@
 			if (selectedShape != null)
 			{
 				getController().setCurrentShape(selectedShape);
-				if ( (selectedShape.shape == "offConnector") || (selectedShape.shape == "onConnector"))
-				{
-					editConnectorDialog.dialog("open");
-				}
-				else
-				{
-					editShapeDialog.dialog("open");
-				}
+
+				editShapeDialog.dialog("open");
 			}
 		}
 		
@@ -4178,24 +4101,24 @@
                 }
             });
 		//define the editConnector popup
-		editConnectorDialog = $("#editConnector").dialog({
-			autoOpen: false,
-			height: 700,
-			width:  600,
-			modal: true,
-			buttons: {
-				"Save": function() {
-					saveEdits("save")
-				},
-				Cancel: function() {
-					editConnectorDialog.dialog("close");
-				}
-			},
-			close: function() {
-				editForm[0].reset();
-
-			}
-		});
+//		editConnectorDialog = $("#editConnector").dialog({
+//			autoOpen: false,
+//			height: 700,
+//			width:  600,
+//			modal: true,
+//			buttons: {
+//				"Save": function() {
+//					saveEdits("save")
+//				},
+//				Cancel: function() {
+//					editConnectorDialog.dialog("close");
+//				}
+//			},
+//			close: function() {
+//				editForm[0].reset();
+//
+//			}
+//		});
 		
 		//define the searchDiagram popup
 		searchDiagramDialog = $("#searchDiagram").dialog({

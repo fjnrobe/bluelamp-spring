@@ -11,5 +11,5 @@ import java.util.List;
 public interface ShapeRepository extends JpaRepository<Shape, String> {
 
     public List<Shape> findByArtifactId(String artifactId);
-
+    public List<Shape> findByDrillDownPageId(String drillDownPageId);
 }

@@ -55,6 +55,10 @@ angular.module('bluelamp' )
     //set a reference to the base controller
      $controller('baseController', { $scope: $scope });
 
+    $scope.navigateToPage = function()
+    {
+        $scope.navigateToDiagram($scope.selectedPredecessorPage.id);
+    }
 
     $scope.loadPage = function(pageId)
     {
@@ -180,15 +184,16 @@ angular.module('bluelamp' )
 			if ($scope.currentShape.shape != "line")
 			{
 				$scope.currentShapeSeqNumber = JSON.parse(JSON.stringify(pCurrentShape.properties.sequenceNumber));
-				$scope.notALine = true;
 			}
-			else
-			{
-				$scope.notALine = false;
-			}
-			
+
+            if (($scope.currentShape.shape == "onConnector") || ($scope.currentShape.shape == "offConnector"))
+            {
+			    $scope.showCategoryFields = false;
+            }
+
 			$scope.currentShapeText = JSON.parse(JSON.stringify(pCurrentShape.properties.shapeText));
-			
+
+
 			//format text for display when deleting
 			var shapeDesc = $scope.currentShape.shape;
 			if (shapeDesc != 'line')
@@ -332,17 +337,8 @@ angular.module('bluelamp' )
 		$scope.currentShape.getElementAt(1).setText($scope.currentShapeSeqNumber);
 		$scope.currentShape.shapeHelper.setText($scope.currentShapeText);
 		
-		//if ($scope.selectedArtifact != null)
-        //{
-			$scope.currentShape.properties.artifact = $scope.selectedArtifact;
-		//}
-		
-		////only an offpage connector will have a pageTitle 
-		//if (($scope.currentShape.shape == "offConnector") || ($scope.currentShape.shape == "onConnector"))
-		//{
-	    //		$scope.currentShape.properties.pageTitle = $scope.currentConnectingPage;	
-		//}
-		
+		$scope.currentShape.properties.artifact = $scope.selectedArtifact;
+
 		//any final impacts to other shapes based on change of this shape are processed here
 		if (postResequence)
 		{

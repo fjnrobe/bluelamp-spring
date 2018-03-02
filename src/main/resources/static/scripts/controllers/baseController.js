@@ -14,6 +14,7 @@ angular.module('bluelamp', [])
     $scope.isArtifact = false;
     $scope.isShape = false;
     $scope.isPage = false;
+    $scope.showCategoryFields = true;
     $scope.notALine = true;
     $scope.currentlySelectedLibraryId = null;   //this is the library entry that has been clicked on for view/expansion
     $scope.tagLibrary = []; //this will populate the dropdown of tag types
@@ -69,14 +70,17 @@ angular.module('bluelamp', [])
          $scope.isShape = false;
          $scope.isPage = false;
          $scope.notALine = true;
+         $scope.showCategoryFields = true;
 
          if (pObjectType == "artifact")
          {
             $scope.isArtifact = true;
-         } else if (pObjectType == "shape")
+         }
+         else if (pObjectType == "shape")
          {
             $scope.isShape = true;
-         } else if (pObjectType == "page")
+         }
+         else if (pObjectType == "page")
          {
             $scope.isPage = true;
          }

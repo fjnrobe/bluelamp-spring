@@ -138,7 +138,7 @@
         </div>
     </div>
 
-    <div ng-show="notALine">
+    <div ng-show="showCategoryFields">
         <fieldset class="fieldSetStyle">
             <legend>{{artifactGroupLabel}}</legend>
             <div class="form-group form-group-sm">
