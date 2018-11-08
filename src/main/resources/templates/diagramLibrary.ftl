@@ -27,47 +27,79 @@
     <link rel="stylesheet" href="/scripts/vendor/jquery.contextMenu.css" />
     <link rel="stylesheet" href="/scripts/vendor/jquery-ui.css" />
     <link rel="stylesheet" href="/css/font-awesome-4.7.0/css/font-awesome.css" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.9/css/all.css" integrity="sha384-5SOiIsAziJl6AWe0HWRKTXlfcSHKmYV4RBF18PPJ173Kzn7jzMyFuTtk8JA7QQG1" crossorigin="anonymous">
     <link rel="stylesheet" href="/css/bluelamp.css" />
+
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <script type="application/json" id="userProfile">
+        ${userProfile}
+    </script>
 
 </head>
 <body >
 <div ng-app="bluelamp" ng-controller="diagramLibraryController" id="diagramLibraryController">
-    <#include "/includes/menu.ftl">
+    <#include "/includes/menu.ftl"/>
 
     <div class="container-fluid" ng-cloak>
         <div class="panel-group">
             <div class="panel panel-primary">
                 <div class="panel-heading">
-                    Diagram Catalog
+                  <!--  <i class="fas fa-info"
+                       style="cursor:help"
+                       onclick="openHelp(1)";></i> -->
+                    Diagram Catalog <a class="helplink"  onClick="openHelp(1)">help <i class="fas fa-info"></i></a>
                 </div>
                 <div class="panel-body">
-                    <button type="button" class="btn btn-primary" ng-click="openSearchDialog()">Search</button>
+                    <div class="input-group input-group-sm">
+                        <input type="text"
+                               id="txtSearch"
+                               class="form-control"
+                               aria-label="Small"
+                               ng-model="diagramSearchText"
+                               placeholder="diagram search">
+                        <span class="input-group-btn">
+                            <button class="btn btn-default"
+                                    type="submit"
+                                    id="btnSearch"
+                                    ng-click="diagramSearch()"
+                            >search</button>
+                          </span>
+                    </div>
                     <div class="well">
                         <div class="dataTables_scrollHeadInner">
-                            <ul>
+                            <ul class="unstyled">
                                 <li class="libraryHeader1 libraryItem"
                                     ng-repeat="library1 in libraryList"
                                     id="{{library1.id}}"
                                     ng-click="showHideDiagrams(this)"
                                     data-library-id="{{library1.id}}"
                                     data-library-level="{{library1.level}}">
-                                    {{library1.description}} [{{library1.subLibraryList.length || library1.subLibraryCount}}] (diagrams: {{library1.diagramCount}})
-                                    <ul class="libraryHeader2" ng-hide="!library1.expanded" >
-                                        <li   class="libraryItem"
+                                    <i class="fas fa-folder"
+                                       ng-show="!library1.expanded"></i>
+                                    <i class="far fa-folder-open"
+                                       ng-show="library1.expanded"></i>
+                                    {{library1.description}} [{{library1.subLibraryList.length || library1.subLibraryCount}}]
+                                        (<i class="far fa-file"></i> {{library1.diagramCount}})
+                                    <ul ng-hide="!library1.expanded" >
+                                        <li   class="libraryItem libraryHeader2"
                                               ng-repeat="library2 in library1.subLibraryList"
                                               id="{{library2.id}}"
-                                              ng-click="showHideDiagrams(this)"
+                                              ng-click="showHideDiagrams(this); $event.stopPropagation();"
                                               data-library-id="{{library2.id}}"
                                               data-library-level="{{library2.level}}">
-                                            {{library2.description}} [{{library2.subLibraryList.length || library2.subLibraryCount}}] (diagrams: {{library2.diagramCount}})
-                                            <ul class="libraryHeader3" ng-hide="!library2.expanded">
-                                                <li class="libraryItem"
+                                            <i class="fas fa-folder"
+                                               ng-show="!library2.expanded"></i>
+                                            <i class="far fa-folder-open"
+                                               ng-show="library2.expanded"></i>{{library2.description}} [{{library2.subLibraryList.length || library2.subLibraryCount}}] (<i class="far fa-file"></i>  {{library2.diagramCount}})
+                                            <ul ng-hide="!library2.expanded">
+                                                <li class="libraryItem libraryHeader3"
                                                     ng-repeat="library3 in library2.subLibraryList"
                                                     id="{{library3.id}}"
-                                                    ng-click="showHideDiagrams(this)"
+                                                    ng-click="showHideDiagrams(this); $event.stopPropagation();"
                                                     data-library-id="{{library3.id}}"
                                                     data-library-level="{{library3.level}}">
-                                                    {{library3.description}} [{{library3.subLibraryList.length || library3.subLibraryCount}}] (diagrams: {{library3.diagramCount}})
+                                                    {{library3.description}} (<i class="far fa-file"></i> {{library3.artifactCount}})
                                                 </li>
                                             </ul>
                                         </li>
@@ -81,26 +113,33 @@
 
             <div class="panel panel-primary">
                 <div class="panel-heading">
-                    Diagrams
+                    Diagrams {{diagramFilterCriteria}}
                 </div>
                 <div class="panel-body">
                     <div class="well">
                         <table class="table table-sm table-hover">
                             <tr>
-                                <th style="width:40%">
+                                <th style="width:30%">
                                     Diagram Title
                                 </th>
-                                <th style="width:60%">
+                                <th style="width:40%">
                                     Diagram Description
+                                </th>
+                                <th style="width:30%">
+                                    Library
                                 </th>
                             </tr>
                             <tr ng-repeat="diagram in diagramList">
-                                <td style="width:40%">
+                                <td style="width:30%">
                                     <a href="/canvas/page/{{diagram.id}}">{{diagram.pageTitle}}</a>
                                 </td>
-                                <td style="width:60%">
+                                <td style="width:40%">
                                     {{diagram.pageDescription}}
                                 </td>
+                                <td style="width:30%">
+                                    {{diagram.libraryAncestry}}
+                                </td>
+
                             </tr>
                         </table>
                     </div>
@@ -110,12 +149,18 @@
     </div>
 
     <!-- this is the popup to create a new diagram -->
-    <#include "/includes/addEditProperties.ftl">
+    <#include "/includes/addEditProperties.ftl"/>
 
 
     <!-- this is the popup for displaying the artifact info
     when selected from the edit popup -->
     <#include "/includes/artifactInfo.ftl"/>
+
+    <!-- this is the popup to add a new tag type -->
+    <#include "/includes/addTagType.ftl" />
+
+    <!--this is the popup for the help -->
+    <#include "/includes/helpDialog.ftl" />
 
     <!-- this is the popup for searching for a diagram -->
     <div id="searchDiagram" title = "Diagram Search" ng-cloak>

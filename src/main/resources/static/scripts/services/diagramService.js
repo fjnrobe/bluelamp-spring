@@ -2,7 +2,7 @@ angular.module('bluelamp')
 	.factory("Diagram", function DiagramFactory($http) {
 
         return {
-            saveDrillDownPage : function(newPageDto, currentPageDto )
+            saveDrillDownPage : function(currentPageDto, newPageDto)
             {
                 var newDrilldownDto = {currentUiPageDto: currentPageDto,
                                        newUiPageDto: newPageDto};
@@ -10,12 +10,24 @@ angular.module('bluelamp')
                 return $http({
                     method: 'POST',
                     url: '/diagrams/drilldown',
-                    data: newDrilldownDto
+                    data: JSON.stringify(newDrilldownDto)
                 }).then (function successCallback(response) {
                     return response;
                     }, function errorCallback(response) {
                     return response;
                     });
+            },
+            saveTemplate : function(shapeTemplateDto)
+            {
+                return $http({
+                    method: 'POST',
+                    url:    '/templates/save',
+                    data:   shapeTemplateDto
+                }).then (function successCallback(response) {
+                    return response;
+                }, function errorCallback(response) {
+                    return response;
+                });
             },
             saveDiagram  : function(pageDto )
             {
@@ -29,18 +41,33 @@ angular.module('bluelamp')
                     return response;
                   });
             },
+            shareDiagram : function(pPageId, pEmailAddress)
+            {
+                var emailMessageDto = {fromEmail : "",
+                                       toEmail: pEmailAddress,
+                                       subject: "",
+                                       body: pPageId};
+
+                return $http({
+                    method: 'POST',
+                    url: '/diagrams/share',
+                    data: emailMessageDto
+                }).then(function successCallback (response) {
+                    return response;
+                }, function errorCallback(response) {
+                    return response;
+                });
+            },
             deleteDiagram : function(pageId)
              {
-//                 $http({
-//                   method: 'DELETE',
-//                   url: '/libraryList' + libraryId
-//                 }).then(function successCallback(response) {
-//                     // this callback will be called asynchronously
-//                     // when the response is available
-//                   }, function errorCallback(response) {
-//                     // called asynchronously if an error occurs
-//                     // or server returns response with an error status.
-//                   });
+                 return $http({
+                   method: 'DELETE',
+                   url: '/canvas/page/' + pageId
+                 }).then(function successCallback(response) {
+                      return response;
+                   }, function errorCallback(response) {
+                      return response;
+                   });
              },
              //load all diagrams associated with the incoming library id
              //return structure is [pageDto]
@@ -55,19 +82,42 @@ angular.module('bluelamp')
                              return response;
                        });
              },
-
+             //load all the shape templates (shapeTemplateDto)
+             loadShapeTemplates: function ()
+             {
+                return $http({
+                    method: 'GET',
+                    url:    '/templates/getall'
+                }).then (function successCallback (response) {
+                    return response;
+                }, function errorCallback(response) {
+                    return response;
+                });
+             },
              //load the uiPageDto - which holds the info to render a diagram
              loadPage: function (pageId)
              {
                 return $http({
                     method: 'GET',
-                    url:    '/canvas/page/' + pageId
+                    url:    '/diagram/page/' + pageId
                 }).then (function successCallBack(response) {
                     return response;
                 }, function errorCallback(response) {
                     return response;
                 });
-             }
+             },
+             diagramSearch: function (searchText)
+               {
+
+                 return $http({
+                    method: 'GET',
+                    url: '/diagrams/library/search/' + searchText
+                  }).then(function successCallback(response) {
+                          return  response;
+                    }, function errorCallback(response) {
+                          return response;
+                    });
+               }
         };
 	});
 

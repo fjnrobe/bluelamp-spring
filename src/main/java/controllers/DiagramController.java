@@ -25,6 +25,13 @@ public class DiagramController {
 
     Logger logger = Logger.getLogger(DiagramController.class);
 
+    @GetMapping(URLConstants.DIAGRAMS_SEARCH)
+    public List<PageDto> getDiagramsBySearch(@PathVariable(value="searchText") String searchText)
+    {
+        return this.diagramManager.getDiagramsBySearch(searchText);
+
+    }
+
     @PostMapping(URLConstants.DIAGRAM_POST_NEW_DRILLDOWN)
     public ResponseEntity<List<ErrorDto>> saveDrillDownPage(@Valid @RequestBody
                                                                     NewDrilldownDto newDrilldownDto)
@@ -63,6 +70,32 @@ public class DiagramController {
         }
     }
 
+//    @PostMapping(URLConstants.DIAGRAM_SHARE)
+//    public ResponseEntity<List<ErrorDto>> shareDiagram(@Valid @RequestBody
+//                                                           EmailMessageDto emailMessageDto)
+//    {
+//
+//        logger.info("called diagram - share");
+//
+//        List<ErrorDto> errors = this.emailManager.shareDiagram(emailMessageDto);
+//
+//        if (!errors.isEmpty())
+//        {
+//            return new ResponseEntity(errors, HttpStatus.NOT_ACCEPTABLE);
+//        }
+//        else
+//        {
+//            return new ResponseEntity(HttpStatus.CREATED);
+//        }
+//    }
+
+    //get a a diagram's page info by page id
+    @GetMapping(URLConstants.DIAGRAM_BY_PAGE_ID)
+    public UiPageDto getDiagramByPageId(@PathVariable(value="pageId") String pageId)
+    {
+        return this.diagramManager.getPageById(pageId);
+    }
+
     //get all diagrams linked to a given library id
     @GetMapping(URLConstants.DIAGRAMS_BY_LIBRARY_ID_GET)
     public List<PageDto> getDiagramsByLibraryId(@PathVariable(value = "libraryId") String libraryId)
@@ -70,4 +103,36 @@ public class DiagramController {
         return this.diagramManager.getDiagramsByLibraryId(libraryId);
     }
 
+    @DeleteMapping(URLConstants.CANVAS_PAGE)
+    public ResponseEntity<List<ErrorDto>> deletePage(@PathVariable(value = "pageId") String pageId)
+    {
+        this.diagramManager.deleteDiagram(pageId);
+
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
+    @GetMapping(URLConstants.TEMPLATE_GETALL)
+    public List<ShapeTemplateDto> getAllShapeTemplates()
+    {
+        return this.diagramManager.getShapeTemplates();
+    }
+
+    @PostMapping(URLConstants.TEMPLATE_SAVE)
+    public ResponseEntity<List<ErrorDto>> saveShapeTemplate(@Valid @RequestBody
+                                                           ShapeTemplateDto shapeTemplateDto)
+    {
+        logger.info("called saveTemplate");
+
+        List<ErrorDto> errors = this.diagramManager.validateAndSaveShapeTemplate(shapeTemplateDto);
+
+        if (!errors.isEmpty())
+        {
+            return new ResponseEntity(errors, HttpStatus.NOT_ACCEPTABLE);
+        }
+        else
+        {
+            return new ResponseEntity(HttpStatus.CREATED);
+        }
+
+    }
 }

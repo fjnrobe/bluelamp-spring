@@ -24,6 +24,17 @@ public class ShapeDto {
     private String drillDownPageId;
     private List<TagDto> tagDtos = new ArrayList<TagDto>();
     private List<AnnotationDto> annotationDtos = new ArrayList<AnnotationDto>();
+    private String templateId; //if the shape was created via
+                               //template, this will be the id
+
+
+    public String getTemplateId() {
+        return templateId;
+    }
+
+    public void setTemplateId(String templateId) {
+        this.templateId = templateId;
+    }
 
     public String getId() {
         return id;

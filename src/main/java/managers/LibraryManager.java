@@ -45,6 +45,16 @@ public class LibraryManager {
         List<ErrorDto> errors = new ArrayList<ErrorDto>();
 
         //need validation logic
+
+        //if the library entry was updated with a change in level, we need
+        //to update it. get the parent library id to determine the parent
+        if (libraryLevel.getParentLibraryId() == "-1")
+        {
+            libraryLevel.setLevel(0);
+        }
+        LibraryLevel parentLibraryEntry = this.getByLibraryId(libraryLevel.getParentLibraryId());
+        libraryLevel.setLevel(parentLibraryEntry.getLevel() + 1);
+
         this.libraryLevelRepository.save(libraryLevel);
 
         return errors;
@@ -116,6 +126,26 @@ public class LibraryManager {
     public LibraryLevel getByLibraryId(String id)
     {
         return this.libraryLevelRepository.findById(id);
+    }
+
+    //returns a text version of the library ancestry in the form:
+    //library / library / library - the parent library structure where the
+    //incoming libraryId is the lowest value
+    public String getLibraryAncestryText(String libraryId)
+    {
+        List<LibraryLevel> ancestry = this.getLibraryAncestry(libraryId);
+
+        String libraryText = ancestry.get(0).getDescription();
+        if (ancestry.size() > 1)
+        {
+            libraryText = ancestry.get(1).getDescription() + "/" + libraryText;
+        }
+        if (ancestry.size() > 2)
+        {
+            libraryText = ancestry.get(2).getDescription() + "/" + libraryText;
+        }
+
+        return libraryText;
     }
 
     //get the libraryLevel info for the incoming library id, and its

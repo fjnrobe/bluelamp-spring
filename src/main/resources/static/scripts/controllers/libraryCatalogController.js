@@ -6,6 +6,8 @@ angular.module('bluelamp')
     //retrieve the children of that library
     $scope.libraryChangeType = "";  //will be used to set the edit mode of the library item
     $scope.referenceLibraryId = "";
+    $scope.showMoveLibraryFields = false;
+
     $scope.currentLibraryItem ={};   //when editing/deleting - this will be set
 
     $scope.entryLevel = "";         //'sibling' or 'child' - 'sibling' : add as same level
@@ -20,11 +22,14 @@ angular.module('bluelamp')
     {
         //wrap in apply so it refreshes page
         $scope.$apply(function () {
+            $scope.showMoveLibraryFields = false;
             $scope.libraryChangeType = "Create";
             $scope.referenceLibraryId = libraryId;
             $scope.entryLevel = level;
             $scope.libraryDescription = "";
             $scope.libraryAbbrev = ""
+
+            $scope.initLibraryLists(libraryId);
         });
     }
 
@@ -34,9 +39,11 @@ angular.module('bluelamp')
         $scope.$apply(function () {
             $scope.libraryChangeType = "Edit";
 
-              $scope.currentLibraryItem = $scope.getLibraryEntry(libraryId);
-              $scope.libraryDescription = JSON.parse(JSON.stringify($scope.currentLibraryItem.description));
-              $scope.libraryAbbrev = JSON.parse(JSON.stringify($scope.currentLibraryItem.abbreviation))
+            $scope.showMoveLibraryFields = true;
+            $scope.initLibraryLists(libraryId);
+            $scope.currentLibraryItem = $scope.getLibraryEntry(libraryId);
+            $scope.libraryDescription = JSON.parse(JSON.stringify($scope.currentLibraryItem.description));
+            $scope.libraryAbbrev = JSON.parse(JSON.stringify($scope.currentLibraryItem.abbreviation))
 
         });
     }
@@ -60,6 +67,20 @@ angular.module('bluelamp')
 
         //wrap in apply so it refreshes page
         $scope.$apply(function () {
+
+            //the library associated with an artifact is the lowest selected level
+            if ($scope.selectedLibrary3.id != null)
+            {
+                $scope.referenceLibraryId = $scope.selectedLibrary3.id;
+            }
+            else if ($scope.selectedLibrary2.id != null)
+            {
+                $scope.referenceLibraryId = $scope.selectedLibrary2.id;
+            }
+            else
+            {
+               $scope.referenceLibraryId = $scope.selectedLibrary1.id;
+            }
 
             if ($scope.libraryChangeType == "Create")
             {
@@ -95,6 +116,7 @@ angular.module('bluelamp')
             {
                 $scope.currentLibraryItem.description = $scope.libraryDescription;
                 $scope.currentLibraryItem.abbreviation = $scope.libraryAbbrev;
+                $scope.currentLibraryItem.parentLibraryId = $scope.referenceLibraryId;
                 persistLibraryEntry($scope.currentLibraryItem);
 
             }

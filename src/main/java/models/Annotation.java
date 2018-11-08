@@ -37,6 +37,10 @@ public class Annotation {
     private Diagram diagram;
 
     @ManyToOne
+    @JoinColumn(name="shape_template_id", foreignKey = @ForeignKey(name="shape_template_id_fk"))
+    private ShapeTemplate shapeTemplate;
+
+    @ManyToOne
     @JoinColumn(name="shape_id", foreignKey = @ForeignKey(name="shape_id_fk"))
     private Shape shape;
 
@@ -83,5 +87,13 @@ public class Annotation {
 
     public void setArtifact(Artifact artifact) {
         this.artifact = artifact;
+    }
+
+    public ShapeTemplate getShapeTemplate() {
+        return shapeTemplate;
+    }
+
+    public void setShapeTemplate(ShapeTemplate shapeTemplate) {
+        this.shapeTemplate = shapeTemplate;
     }
 }

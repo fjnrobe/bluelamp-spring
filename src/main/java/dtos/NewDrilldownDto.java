@@ -5,8 +5,13 @@ package main.java.dtos;
  */
 public class NewDrilldownDto {
 
-    public UiPageDto currentUiPageDto;
     public UiPageDto newUiPageDto;
+    public UiPageDto currentUiPageDto;
+
+    public NewDrilldownDto()
+    {
+
+    }
 
     public UiPageDto getCurrentUiPageDto() {
         return currentUiPageDto;

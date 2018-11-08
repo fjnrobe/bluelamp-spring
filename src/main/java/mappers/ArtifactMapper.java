@@ -11,7 +11,7 @@ import main.java.models.Tag;
  */
 public class ArtifactMapper {
 
-    public static ArtifactDto mapModelToDto(Artifact artifact)
+    public static ArtifactDto mapModelToDto(Artifact artifact, String documentFileName)
     {
         ArtifactDto artifactDto = new ArtifactDto();
         artifactDto.setId(artifact.getId());
@@ -20,15 +20,18 @@ public class ArtifactMapper {
         artifactDto.setAbbreviation(artifact.getAbbreviation());
         artifactDto.setDocumentType(artifact.getLovDocumentType());
         artifactDto.setLibraryId(artifact.getLibraryLevel().getId());
+        artifactDto.setDocumentName(artifact.getDocumentName());
+        artifactDto.setDocumentFileName(documentFileName);
+
 
         for (Tag tag : artifact.getTags())
         {
-            artifactDto.getTagDtos().add(TagMapper.mapModelToDto(tag));
+            artifactDto.getTagDtos().add(TagMapper.mapModelToDto(tag,false));
         }
 
         for (Annotation annotation : artifact.getAnnotations())
         {
-            artifactDto.getAnnotationDtos().add(AnnotationMapper.mapModelToDto(annotation)) ;
+            artifactDto.getAnnotationDtos().add(AnnotationMapper.mapModelToDto(annotation,false)) ;
         }
 
         return artifactDto;

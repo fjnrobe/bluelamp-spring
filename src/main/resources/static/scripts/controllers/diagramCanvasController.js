@@ -1,5 +1,5 @@
 angular.module('bluelamp' )
-.controller('canvasController', [ '$q', '$scope',
+.controller('canvasController', [ '$q', '$scope', '$timeout',
                                             '$controller',
                                             'Library',
                                             'Artifact',
@@ -7,8 +7,15 @@ angular.module('bluelamp' )
                                             'Lov',
                                             'Diagram',
                                             function($q,
-                                                    $scope, $controller, Library, Artifact, Tag, Lov, Diagram) {
+                                                    $scope, $timeout,
+                                                    $controller,
+                                                    Library,
+                                                    Artifact,
+                                                    Tag,
+                                                    Lov,
+                                                    Diagram) {
 
+    $scope.emailRecipient = "";
     $scope.uiPageDto = {};
 	$scope.pageTitle = "";
 	$scope.pageDescription = "";
@@ -19,12 +26,13 @@ angular.module('bluelamp' )
 	$scope.pageShapes = [];
 	
 	$scope.currentShape;		//this gets set whenever the user right clicks on a shape to edit
+    $scope.diagramSearchText = "";
+	$scope.selectedDiagram = {}; //set to the page id of the selected diagram when setting up a drill down
+	$scope.selectedDiagramId = "";
+	$scope.diagramList = [];
 
-	$scope.searchText = "";
-	$scope.matchingDiagramsList = []; //loaded if the user wants to create a drill down on a shape and opts to search for an existing page
-	$scope.selectedDiagram = "";		//set to the page id of the selected diagram when setting up a drill down
-		
 	//these will eventually come from a properties file - allows customization of the labels/names for the library levels
+	$scope.artifactGroupLabel = "Associated Artifact";
 	$scope.library1Label = "Functional Area";
 	$scope.library2Label = "Sub-Functional Area";
 	$scope.library3Label = "Module";
@@ -51,11 +59,18 @@ angular.module('bluelamp' )
 	$scope.currentShapeText = "";
 
 	$scope.currentConnectingPage = "";
+    $scope.changes = false;
+    $scope.selectedShapeTemplate = {id: -1}; //shapeTemplateDto
+    $scope.saveAsTemplate = false;
+    $scope.saveTemplateName = "";
+    $scope.showSaveAsTemplate = false;
+    $scope.showSharedCheckbox = false;
+    $scope.shapeTemplates = []; //array of shapeTemplateDto
 
     //set a reference to the base controller
      $controller('baseController', { $scope: $scope });
 
-    $scope.navigateToPage = function()
+    $scope.navigateToPredecessorPage = function()
     {
         $scope.navigateToDiagram($scope.selectedPredecessorPage.id);
     }
@@ -68,7 +83,7 @@ angular.module('bluelamp' )
            {
                $scope.errors = response.data;
            }
-           else if (response.status == "201")
+           else if (response.status == "200")
            {
                $scope.setCurrentPage(response.data);
                populatePage(response.data);
@@ -79,7 +94,7 @@ angular.module('bluelamp' )
 
     $scope.saveDrillDownPage = function(currentPageUiDto, newPageUiDto)
     {
-        Diagram.saveDrillDownPage(newPageUiDto, currentPageUiDto ). then (function (response) {
+        Diagram.saveDrillDownPage(currentPageUiDto,newPageUiDto). then (function (response) {
 
             if (response.status == "201")
             {
@@ -90,16 +105,15 @@ angular.module('bluelamp' )
             }
             else
             {
-                $scope.pageBeingEdited = JSON.parse(JSON.stringify($scope.currentPage));
-                $scope.currentPage = JSON.parse(JSON.stringify(newPageUiDto));
+                $scope.pageBeingEdited = $scope.clone($scope.currentPage);
+                $scope.currentPage = $scope.clone(newPageUiDto);
 
                 $scope.errors = response.data;
             }
         })
     }
 
-    //persist the incoming page data. If there is a nextPageId, navigate to that
-    //page upon save if no errors.
+    //persist the incoming page data.
     $scope.savePage = function(uiPageDto)
     {
         Diagram.saveDiagram(uiPageDto).then (function (response) {
@@ -110,19 +124,42 @@ angular.module('bluelamp' )
            }
            else if (response.status == "201")
            {
-
+              $scope.changes = false;
            }
         });
     }
 
+    //persist the incoming shape template
+    $scope.saveTemplate = function(shapeTemplateDto)
+    {
+        Diagram.saveTemplate(shapeTemplateDto).then (function (response) {
+            if (response.status == "406")
+            {
+                $scope.errors = response.data;
+            }
+            //good save
+            else if (response.status == "201")
+            {
+                $scope.loadShapeTemplates();
+                //stamp the templateId on the shape that was saved to create the template
+                $scope.currentShape.properties.templateId = shapeTemplateDto.id;
+                var fillInfo = new jsgl.fill.SolidFill('grey', .07, true);
+                $scope.currentShape.getElementAt(0).setFill(fillInfo);
 
+                $scope.saveTemplateName = "";
+                $scope.saveAsTemplate = false;
+
+                editShapeDialog.dialog("close");
+            }
+        });
+    }
 
 	//this function will reset the contents of the currentPage - all elements other than the pageDto
 	$scope.initializePageDto = function()
 	{
 		$scope.currentPage.shapeDtos = [];
 		$scope.currentPage.shapeRelationshipDtos = [];
-		$scope.currentPage.predecessorPageDtos = [];
+	//	$scope.currentPage.predecessorPageDtos = [];
 	}
 
 	$scope.setPageShapes = function(pPageShapes)
@@ -151,9 +188,51 @@ angular.module('bluelamp' )
 //        copy the current page off to the side - so the popup for the new page can
 //        reference the 'currentPage' scope attributes - when the page is saved, we'll
 //        swap back
-        $scope.pageBeingEdited = JSON.parse(JSON.stringify($scope.currentPage));
+
+        $scope.pageBeingEdited = $scope.clone($scope.currentPage);
+
         $scope.setEditType("page");
         $scope.newPageAction = "drilldown";
+        $scope.currentPage = $scope.createNewUiPageDto();
+        $scope.pageTitle = "";
+        $scope.pageDescription = "";
+        $scope.initLibraryLists(null);
+        $scope.annotations = [];
+        $scope.errors = [];
+        $scope.annotation = {id: $scope.generateId(), annotationText: ""};
+
+        editPageDialog.dialog("open");
+        $timeout(function () {
+            $scope.editPropertyTitle = "Create Diagram";
+        });
+    }
+
+    //when the user right-clicks a shape to create a drill down to an existing page
+    $scope.setupDrillDownToExistingPage = function(pCurrentShape)
+    {
+//        copy the current page off to the side - so the popup for the new page can
+//        reference the 'currentPage' scope attributes - when the page is saved, we'll
+//        swap back
+
+        $scope.initLibraryLists(null);
+        $scope.diagramList = [];
+      	$scope.selectedDiagram = {};
+       	$scope.selectedDiagramId = "";
+        $scope.currentShape = pCurrentShape;
+        $scope.errors = [];
+
+        searchDiagramDialog.dialog("open");
+    }
+
+    //when the user right clicks on a group select and chooses to promote to a new page
+    $scope.setupPromoteToNewPage = function()
+    {
+//        copy the current page off to the side - so the popup for the new page can
+//        reference the 'currentPage' scope attributes - when the page is saved, we'll
+//        swap back
+        $scope.pageBeingEdited = $scope.clone($scope.currentPage);
+        $scope.setEditType("page");
+        $scope.newPageAction = "promote";
         $scope.currentPage = $scope.createNewUiPageDto();
         $scope.initLibraryLists(null);
         $scope.annotations = [];
@@ -163,8 +242,7 @@ angular.module('bluelamp' )
         editPageDialog.dialog("open");
     }
 
-
-	//this function is called when a user right clicks to edit an artifact -
+	//this function is called when a user right clicks to edit a shape
 	//it will bind the necessary parts of the shape's properties for page display
 	//we don't want to bind directly to the shape or there won't be a way to undo the changes
 	//- we want the user to click 'save' so the values get
@@ -174,16 +252,17 @@ angular.module('bluelamp' )
 		 //force a refresh back to the html		 
 		 $scope.$apply(function () {
 
+            $scope.errors = [];
             $scope.setEditType("shape");
 			$scope.currentShape = pCurrentShape;
 	
-			$scope.tags = JSON.parse(JSON.stringify(pCurrentShape.properties.tags));
+			$scope.tags = $scope.clone(pCurrentShape.properties.tags);
 			$scope.annotation = {id: $scope.generateId(), annotationText: ""};
-			$scope.annotations = JSON.parse(JSON.stringify(pCurrentShape.properties.annotations));
+			$scope.annotations = $scope.clone(pCurrentShape.properties.annotations);
 			
 			if ($scope.currentShape.shape != "line")
 			{
-				$scope.currentShapeSeqNumber = JSON.parse(JSON.stringify(pCurrentShape.properties.sequenceNumber));
+				$scope.currentShapeSeqNumber = $scope.clone(pCurrentShape.properties.sequenceNumber);
 			}
 
             if (($scope.currentShape.shape == "onConnector") || ($scope.currentShape.shape == "offConnector"))
@@ -191,16 +270,7 @@ angular.module('bluelamp' )
 			    $scope.showCategoryFields = false;
             }
 
-			$scope.currentShapeText = JSON.parse(JSON.stringify(pCurrentShape.properties.shapeText));
-
-
-			//format text for display when deleting
-			var shapeDesc = $scope.currentShape.shape;
-			if (shapeDesc != 'line')
-			{
-				shapeDesc += "- sequence number: " + $scope.currentShapeSeqNumber;
-			}
-			$scope.shapeDescription = shapeDesc;
+			$scope.currentShapeText = $scope.clone(pCurrentShape.properties.shapeText);
 
 			$scope.selectedArtifact = pCurrentShape.properties.artifact;
 
@@ -213,6 +283,39 @@ angular.module('bluelamp' )
     		    $scope.initLibraryLists(null);
     		}
 
+    		 if ($scope.userProfile.editor == false)
+             {
+                angular.element('.ui-dialog-buttonpane').find('button:first').css('visibility','hidden');
+             }
+
+             if ($scope.getUserProfile().editor)
+             {
+                 if (pCurrentShape.properties.templateId == null)
+                 {
+                    $scope.saveAsTemplate = false;
+                    $scope.saveTemplateName = "";
+                    $scope.showSaveAsTemplate = true;
+                    $scope.showSharedCheckbox = false;
+                 }
+                 else
+                 {
+                    $scope.showSaveAsTemplate = false;
+                    $scope.showSharedCheckbox = true;
+
+                    for (var tIdx = 0; tIdx < $scope.shapeTemplates.length; tIdx++)
+                    {
+                        if ($scope.shapeTemplates[tIdx].id == pCurrentShape.properties.templateId)
+                        {
+                            $scope.saveTemplateName = $scope.shapeTemplates[tIdx].templateName;
+                        }
+                    }
+                 }
+             }
+             else
+             {
+                $scope.showSharedCheckbox = false;
+                $scope.showSaveAsTemplate = false;
+             }
         });
 	}
 	
@@ -249,9 +352,9 @@ angular.module('bluelamp' )
 			{
 			    if (!(pageShapes[idx].properties.sequenceNumber === "") )
 			    {
-                    if ((pageShapes[idx].properties.sequenceNumber >= currSeq))
+                    if ((parseInt(pageShapes[idx].properties.sequenceNumber) >= parseInt(currSeq)))
                     {
-                        pageShapes[idx].properties.sequenceNumber = pageShapes[idx].properties.sequenceNumber - 1;
+                        pageShapes[idx].properties.sequenceNumber = parseInt(pageShapes[idx].properties.sequenceNumber) - 1;
                         pageShapes[idx].getElementAt(1).setText(pageShapes[idx].properties.sequenceNumber);
                     }
                 }
@@ -266,7 +369,7 @@ angular.module('bluelamp' )
                 if (!(pageShapes[idx].properties.sequenceNumber === "") )
                 {
 
-                    if ((pageShapes[idx].properties.sequenceNumber == newSeq) && (idx != currShapeIdx))
+                    if ((parseInt(pageShapes[idx].properties.sequenceNumber) == parseInt(newSeq)) && (idx != currShapeIdx))
                     {
                         bumpUp = true;
                         break;
@@ -277,9 +380,9 @@ angular.module('bluelamp' )
 			{
 				for (var idx = 0; idx < pageShapes.length; idx++)
 				{
-					if ((pageShapes[idx].properties.sequenceNumber >= newSeq) && (idx != currShapeIdx))
+					if ((parseInt(pageShapes[idx].properties.sequenceNumber) >= parseInt(newSeq)) && (idx != currShapeIdx))
 					{
-						pageShapes[idx].properties.sequenceNumber = pageShapes[idx].properties.sequenceNumber + 1;
+						pageShapes[idx].properties.sequenceNumber = parseInt(pageShapes[idx].properties.sequenceNumber) + 1;
 						pageShapes[idx].getElementAt(1).setText(pageShapes[idx].properties.sequenceNumber);
 					}
 				}
@@ -291,7 +394,7 @@ angular.module('bluelamp' )
 		var slideDown = true;
 		for (var idx = 0; idx < pageShapes.length; idx++)
 		{
-			if (pageShapes[idx].properties.sequenceNumber == 1)
+			if (parseInt(pageShapes[idx].properties.sequenceNumber) == 1)
 			{
 				slideDown = false;
 				break;
@@ -304,20 +407,37 @@ angular.module('bluelamp' )
                 if (!(pageShapes[idx].properties.sequenceNumber === "") )
                 {
 
-                    pageShapes[idx].properties.sequenceNumber = pageShapes[idx].properties.sequenceNumber - 1;
+                    pageShapes[idx].properties.sequenceNumber = parseInt(pageShapes[idx].properties.sequenceNumber) - 1;
                     pageShapes[idx].getElementAt(1).setText(pageShapes[idx].properties.sequenceNumber);
                 }
 			}
 		}	
 	}
 
-	//called when the user clicks save on the editshape popup - push the changes values onto the current change
+    //called when the user clicks to save a shape as a template
+    $scope.saveShapeAsTemplate = function()
+    {
+         //now create a new shapeTemplateDto and persist
+        var newTemplateDto = {id: $scope.generateId(),
+                              templateName: $scope.saveTemplateName,
+                               referenceArtifactDto : $scope.selectedArtifact,
+                               shapeType: $scope.currentShape.shape,
+                               shapeText: $scope.currentShapeText,
+                               drillDownPageId: -1,
+                               tagDtos: $scope.tags,
+                               annotationDtos: $scope.annotations};
+
+         $scope.saveTemplate(newTemplateDto);
+    }
+
+	//called when the user clicks save on the editshape popup - push the changed values onto the current change
 	$scope.saveShape = function()
 	{
 		var postResequence = false;
 		var currentSeq = -1;
 		var newSeq = -1;
-		
+
+		$scope.triggerChange();
 		$scope.currentShape.properties.tags = $scope.tags;
 		$scope.currentShape.properties.annotations = $scope.annotations;
 		
@@ -334,7 +454,13 @@ angular.module('bluelamp' )
 		}
 		
 		$scope.currentShape.properties.sequenceNumber = $scope.currentShapeSeqNumber;
-		$scope.currentShape.getElementAt(1).setText($scope.currentShapeSeqNumber);
+		//$scope.currentShape.getElementAt(1).setText($scope.currentShapeSeqNumber);
+		$scope.currentShape.shapeHelper.clearShape();
+		$scope.currentShape.shapeHelper.addSequence();
+		if ($scope.currentShape.shape != "line")
+		{
+    		$scope.currentShape.shapeHelper.addCommentGlyph();
+    	}
 		$scope.currentShape.shapeHelper.setText($scope.currentShapeText);
 		
 		$scope.currentShape.properties.artifact = $scope.selectedArtifact;
@@ -344,20 +470,77 @@ angular.module('bluelamp' )
 		{
 			$scope.resequence($scope.pageShapes, currentSeq, newSeq, $scope.getPageShapeIdx($scope.currentShape));
 		}
-	}
-	
-	//when the user clicks search on the 'search diagrams' popup
-	$scope.searchDiagrams = function()
-	{
-		//need to invoke actual backend end point to get the diagrams that meet the search criteria- dummy results for now
-		$scope.matchingDiagramsList = [];
 
-		//the results will have a pageName (which must be unique across the system, and a library description which is the level 1, level 2, level 3 entry
-		$scope.matchingDiagramsList = [{pageId: 1, diagramTitle: "title one", diagramLibrary: "Health, CAPP STRS, Financials"}, 
-							     {pageId: 2, diagramTitle: "title two", diagramLibrary: "Benefits, Forms"},
-								 {pageId: 3, diagramTitle: "title three", diagramLibrary: "Contracts"}];
+		//if the user wants to save this shape as a template - persist the template
+		if (($scope.saveTemplateName != "") && ($scope.saveAsTemplate))
+		{
+    		$scope.saveShapeAsTemplate();
+		}
+		else
+		{
+		    //if this is a shared shape, we need to push the changes to another other shape
+		    //on the page that might be using the same template
+		    if ($scope.currentShape.properties.templateId != null)
+		    {
+		        $scope.pushSharedPropertiesToOtherShapes();
+		    }
+		    editShapeDialog.dialog("close");
+		}
 	}
-	
+
+    //when a shape is saved - if it is a shared shape, look to see if there are
+    //any other similar shapes of the same template and update template shared values
+
+    $scope.pushSharedPropertiesToOtherShapes = function()
+    {
+        for (var idx = 0; idx < pageShapes.length; idx++)
+        {
+            if (pageShapes[idx].id != $scope.currentShape.id)
+            {
+                if (pageShapes[idx].properties.templateId == $scope.currentShape.properties.templateId)
+                {
+                    //remove all the shared tags and then add in from the updated tag list
+                    for (var tagIdx = pageShapes[idx].properties.tags.length -1; tagIdx > -1; tagIdx--)
+                    {
+                        if (pageShapes[idx].properties.tags[tagIdx].sharedInd == true)
+                        {
+                            pageShapes[idx].properties.tags.splice(tagIdx,1);
+                        }
+                    }
+                    for (var tagIdx = 0; tagIdx < $scope.tags.length; tagIdx++ )
+                    {
+                        if ($scope.tags[tagIdx].sharedInd == true)
+                        {
+                            pageShapes[idx].properties.tags.push(JSON.parse(JSON.stringify($scope.tags[tagIdx])))
+                        }
+                    }
+
+                    //remove all the shared annotations and then add in from the updated list
+                    for (var tagIdx = pageShapes[idx].properties.annotations.length -1; tagIdx > -1; tagIdx--)
+                    {
+                        if (pageShapes[idx].properties.annotations[tagIdx].sharedInd == true)
+                        {
+                            pageShapes[idx].properties.annotations.splice(tagIdx,1);
+                        }
+                    }
+                    for (var tagIdx = 0; tagIdx < $scope.annotations.length; tagIdx++ )
+                    {
+                        if ($scope.annotations[tagIdx].sharedInd == true)
+                        {
+                            pageShapes[idx].properties.annotations.push(JSON.parse(JSON.stringify($scope.annotations[tagIdx])))
+                        }
+                    }
+
+                    pageShapes[idx].shapeHelper.clearShape();
+                    pageShapes[idx].shapeHelper.addSequence();
+                    pageShapes[idx].shapeHelper.addCommentGlyph();
+                    pageShapes[idx].shapeHelper.setText($scope.currentShapeText);
+                    pageShapes[idx].properties.artifact = $scope.selectedArtifact;
+                }
+            }
+        }
+    }
+
 	//on the editConnector popup, when the user clicks on a diagram, this gets invoked
 	$scope.setSelectedDiagram = function(row) {
 		
@@ -367,19 +550,137 @@ angular.module('bluelamp' )
 	//when the user clicks save on the searchDiagram popup
 	$scope.saveSelectedDiagram = function()
 	{
-		$scope.currentShape.properties.drillDownPageId = $scope.selectedDiagram.pageId;
-		$scope.currentShape.properties.drillDownPageTitle = $scope.selectedDiagram.diagramTitle;
-
-		//when a shape links to a drill down page, then there won't be any text - the title of the linked page takes precedence
-		$scope.currentShape.shapeHelper.setText("");
+		$scope.currentShape.properties.drillDownPageId = $scope.selectedDiagram.id;
+		$scope.currentShape.shapeHelper.setText($scope.currentShape.properties.shapeText);
+		$scope.changes = true;
 	}
 
+    //when the user selects an entry in the 1st library list on the diagram search popup
+    $scope.loadSearchLibrary2List = function()
+    {
+        $scope.loadLibrary2List();
+        $scope.loadDiagramList($scope.selectedLibrary1.id);
+    }
 
-	 $scope.loadLibrary();
-     $scope.loadTags();
-     $scope.loadDocTypes();
+    //when the user selects an entry in the 2nd library list on the diagram search popup
+    $scope.loadSearchLibrary3List = function()
+    {
+        $scope.loadLibrary3List();
+        $scope.loadDiagramList($scope.selectedLibrary2.id);
+    }
+
+    //in the diagram search popup - when a library entry is selected, the diagrams associated with
+    //the library are loaded
+    $scope.loadDiagramList = function(libraryId)
+    {
+         if (libraryId != null)
+        {
+           Diagram.loadDiagrams(libraryId).then(function (response) {
+                if (response.status == "406")
+                {
+                    $scope.errors = response.data;
+                }
+                else
+                {
+                    $scope.diagramList = response.data;
+                }
+            });
+        }
+    }
+
+    $scope.deleteDiagram = function()
+    {
+         Diagram.deleteDiagram($scope.currentPage.pageDto.id).then(function (response) {
+            if (response.status == "200")
+            {
+                $scope.navigateToPage("/diagramHome");
+            }
+            else
+            {
+                $scope.errors = response.data;
+            }
+         });
+    }
+
+    $scope.shareDiagram = function()
+    {
+        Diagram.shareDiagram($scope.currentPage.pageDto.id, $scope.emailRecipient).then (function (response) {
+
+            if (response.status == "200")
+            {
+                sendEmailDialog.dialog("close");
+            }
+            else
+            {
+                $scope.popupErrors = response.data;
+            }
+        });
+    }
+
+    function loadDiagrams(libraryId)
+    {
+         if (libraryId != null)
+        {
+           Diagram.loadDiagrams(libraryId).then(function (response) {
+                if (response.status == "406")
+                {
+                    $scope.errors = response.data;
+                }
+                else
+                {
+                    $scope.diagramList = response.data;
+                }
+            });
+        }
+    }
+
+    $scope.diagramSearch = function()
+    {
+        if ($scope.diagramSearchText != "")
+        {
+             Diagram.diagramSearch($scope.diagramSearchText).then(function (response) {
+                if (response.status == "406")
+                {
+                }
+                else
+                {
+                    $scope.diagramList = response.data;
+                    $scope.diagramFilterCriteria = "search by (" + $scope.diagramSearchText + ")";
+                }
+             });
+        }
+    }
+
+    $scope.loadShapeTemplates = function()
+    {
+        $scope.shapeTemplates = [{id: -1,
+                                  templateName: "",
+                                  referenceArtifactDto: {},
+                                  shapeType: "",
+                                  shapeText: "",
+                                  drillDownPageId: -1,
+                                  tagDtos: [],
+                                  annotationDtos: []}];
+
+        Diagram.loadShapeTemplates().then (function (response) {
+            if (response.status == "406")
+            {
+            }
+            else
+            {
+                $scope.shapeTemplates =
+                $scope.shapeTemplates.concat(response.data);
+            }
+        });
+    }
+
+	$scope.loadLibrary();
+    $scope.loadTags();
+    $scope.loadDocTypes();
+    $scope.loadShapeTemplates();
 
 	$scope.uiPageDto = document.getElementById("uiPageDto").innerHTML;
-	$scope.currentPage = JSON.parse($scope.uiPageDto);
+	$scope.setCurrentPage (JSON.parse($scope.uiPageDto));
+    var xx = $scope.currentPage.predecessorPageDtos.length;
 
 }]);

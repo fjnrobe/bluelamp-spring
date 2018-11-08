@@ -22,13 +22,17 @@
     <script src="/scripts/services/lovService.js"></script>
 
     <script src="/scripts/controllers/artifactLibraryController.js"></script>
-
-
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.9/css/all.css" integrity="sha384-5SOiIsAziJl6AWe0HWRKTXlfcSHKmYV4RBF18PPJ173Kzn7jzMyFuTtk8JA7QQG1" crossorigin="anonymous">
     <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <link rel="stylesheet" href="/scripts/vendor/jquery.contextMenu.css" />
     <link rel="stylesheet" href="/scripts/vendor/jquery-ui.css" />
     <link rel="stylesheet" href="/css/font-awesome-4.7.0/css/font-awesome.css" />
     <link rel="stylesheet" href="/css/bluelamp.css" />
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <script type="application/json" id="userProfile">
+        ${userProfile}
+    </script>
 
 </head>
 <body>
@@ -39,10 +43,23 @@
         <div class="panel-group">
             <div class="panel panel-primary">
                 <div class="panel-heading">
-                    Artifact Catalog
+                    Artifact Catalog <a class="helplink" onClick="openHelp(1)">help <i class="fas fa-info"></i></a>
                 </div>
                 <div class="panel-body">
-                    <button type="button" class="btn btn-primary" ng-click="testpromise()">Search</button>
+                    <div class="input-group input-group-sm">
+                        <input type="text"
+                               id="txtSearch"
+                               class="form-control"
+                               aria-label="Small"
+                               ng-model="artifactSearchText"
+                               placeholder="artifact search">
+                        <span class="input-group-btn">
+                            <button class="btn btn-default"
+                                    type="search"
+                                    id="btnSearch"
+                                    ng-click="artifactSearch()">search</button>
+                        </span>
+                    </div>
                     <div class="well">
                         <div class="dataTables_scrollHeadInner">
                             <ul>
@@ -52,23 +69,31 @@
                                     ng-click="showHideArtifacts(this)"
                                     data-library-id="{{library1.id}}"
                                     data-library-level="{{library1.level}}">
-                                    {{library1.description}} [{{library1.subLibraryList.length || library1.subLibraryCount}}] (artifacts: {{library1.artifactCount}})
-                                    <ul class="libraryHeader2" ng-hide="!library1.expanded" >
-                                        <li   class="libraryItem"
+                                    <i class="fas fa-folder"
+                                       ng-show="!library1.expanded"></i>
+                                    <i class="far fa-folder-open"
+                                       ng-show="library1.expanded"></i>
+                                    {{library1.description}} [{{library1.subLibraryList.length || library1.subLibraryCount}}] (<i class="far fa-file"></i> {{library1.artifactCount}})
+                                    <ul  ng-hide="!library1.expanded" >
+                                        <li   class="libraryItem libraryHeader2"
                                               ng-repeat="library2 in library1.subLibraryList"
                                               id="{{library2.id}}"
-                                              ng-click="showHideArtifacts(this)"
+                                              ng-click="showHideArtifacts(this); $event.stopPropagation();"
                                               data-library-id="{{library2.id}}"
                                               data-library-level="{{library2.level}}">
-                                            {{library2.description}} [{{library2.subLibraryList.length || library2.subLibraryCount}}] (artifacts: {{library2.artifactCount}})
-                                            <ul class="libraryHeader3" ng-hide="!library2.expanded">
-                                                <li class="libraryItem"
+                                              <i class="fas fa-folder"
+                                               ng-show="!library2.expanded"></i>
+                                              <i class="far fa-folder-open"
+                                               ng-show="library2.expanded"></i>
+                                            {{library2.description}} [{{library2.subLibraryList.length || library2.subLibraryCount}}] (<i class="far fa-file"></i> {{library2.artifactCount}})
+                                            <ul  ng-hide="!library2.expanded">
+                                                <li class="libraryItem libraryHeader3"
                                                     ng-repeat="library3 in library2.subLibraryList"
                                                     id="{{library3.id}}"
-                                                    ng-click="showHideArtifacts(this)"
+                                                    ng-click="showHideArtifacts(this); $event.stopPropagation();"
                                                     data-library-id="{{library3.id}}"
                                                     data-library-level="{{library3.level}}">
-                                                    {{library3.description}} [{{library3.subLibraryList.length || library3.subLibraryCount}}] (artifacts: {{library3.artifactCount}})
+                                                    {{library3.description}} (<i class="far fa-file"></i> {{library3.artifactCount}})
                                                 </li>
                                             </ul>
                                         </li>
@@ -82,25 +107,32 @@
 
             <div class="panel panel-primary">
                 <div class="panel-heading">
-                    Artifacts
+                    Artifacts: {{artifactFilterCriteria}}
                 </div>
                 <div class="panel-body">
                     <div class="well">
 
-                        <table class="table table-sm table-hover">
+                        <table class="table table-hover table-condensed">
                             <tr>
                                 <th>
                                     Artifact Title
                                 </th>
+                                <th>
+                                    Library
+                                </th>
 
                             </tr>
-                            <tr ng-repeat="artifact in artifactList">
-                                <td>
-                                    <div class="artifactItem"
-                                         data-artifact-id="{{artifact.id}}">{{artifact.documentTitle}}</div>
-                                </td>
-
-                            </tr>
+                            <tbody>
+                                <tr ng-repeat="artifact in artifactList">
+                                    <td>
+                                        <div class="artifactItem"
+                                             data-artifact-id="{{artifact.id}}">{{artifact.documentTitle}}</div>
+                                    </td>
+                                    <td>
+                                        {{artifact.libraryAncestry}}
+                                    </td>
+                                </tr>
+                            </tbody>
                         </table>
 
                     </div>
@@ -158,55 +190,11 @@
     <!-- this is the popup to add a new tag type -->
     <#include "/includes/addTagType.ftl" />
 
-    <!-- this is the popup for searching for an artifact -->
-    <div id="searchArtifact" title = "Artifact Search" ng-cloak>
+    <!--this is the popup for the help -->
+    <#include "/includes/helpDialog.ftl" />
 
-        <table class="tblformatOnly">
-            <tr>
-                <td>
-                    <label for="fldSearch">Search:</label>
-                </td>
-                <td>
-                    <Input type="text" id="fldSearch"
-                           ng-model="searchText"
-                           name="fldSearch">
-                </td>
-                <td>
-                    <button id="btnSearchArtifacts"
-                            class="ui-button ui-widget ui-corner-all"
-                            ng-click="searchArtifacts()">Search
-                    </button>
-                </td>
-            </tr>
-        </table>
-
-
-        <form>
-            <fieldset class="fieldSetStyle">
-                <legend>Matches</legend>
-                <table id="tblDiagrams" class="tblFormatDisplay">
-                    <thead>
-                    <tr>
-                        <th>Select</th>
-                        <th>Matching Artifact</th>
-                        <th>Library Location</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr ng-repeat="row in matchingArtifactsList">
-                        <td><input type="radio" name="select$index"
-                                   ng-click="setSelectedArtifact(row)"								>
-                        </td>
-                        <td>{{row.documentTitle}}</td>
-                        <td>{{row.documentLibrary}}</td>
-                    </tr>
-                    </tbody>
-                </table>
-            </fieldset>
-
-        </form>
-    </div>
-
+    <!--this is teh popup for error messages -->
+    <#include "/includes/errorMessages.ftl" />
 </div>
 
 </body>

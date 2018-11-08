@@ -34,10 +34,10 @@ function saveNewDocType()
     getController().saveNewDocType();
 }
 
-function handleSelectParentArtifact()
+function openHelp(whichSection)
 {
-    getController().setParentArtifact();
-    searchArtifactDialog.dialog("close");
+    helpPopup.dialog("open");
+
 }
 
 $(function() {
@@ -51,9 +51,27 @@ $(function() {
       form.classList.add('was-validated');
     }, false);
 
+    $("#txtSearch").keyup(function(event){
+        if(event.keyCode == 13){
+            $("#btnSearch").click();
+        }
+    });
+
+    $( "#tabs" ).tabs({
+      active: 0
+    });
+
     $.contextMenu({
         selector: '.libraryItem',
         autoHide: true,
+
+        events  : {
+            show: function(options) {
+
+                //don't create popup to create new artifacts unless the user has the EDITOR role
+                return (getController().getUserProfile().editor == true);
+            }
+        },
         items: {
             "newArtifact": {name: "Create New Artifact",
 
@@ -70,15 +88,55 @@ $(function() {
         selector: '.artifactItem',
         autoHide: true,
         items: {
-             "editArtifact": {name: "Edit Artifact",
+             "viewArtifact": {name: "View Artifact",
+                              visible: function( key, opt)
+                              {
+                                   if (getController().getUserProfile().editor == false)
+                                   {
+                                       return true;
+                                   }
+                                   else
+                                   {
+                                       return false;
+                                   }
+                              },
+                             icon: "edit",
+                             callback: function (itemKey, opt, rootMenu, originalEvent)
+                             {
+                                   handleEditArtifact(this);
+                             }
 
-                                    icon: "edit",
-                                    callback: function (itemKey, opt, rootMenu, originalEvent)
+             },
+             "editArtifact": {name: "Edit Artifact",
+                              visible: function( key, opt)
+                              {
+                                    if (getController().getUserProfile().editor == true)
                                     {
-                                        handleEditArtifact(this);
+                                        return true;
                                     }
+                                    else
+                                    {
+                                        return false;
+                                    }
+                              },
+                              icon: "edit",
+                              callback: function (itemKey, opt, rootMenu, originalEvent)
+                              {
+                                    handleEditArtifact(this);
+                              }
              },
              "deleteArtifact": {name: "Delete Artifact",
+                                visible: function( key, opt)
+                                   {
+                                         if (getController().getUserProfile().editor == true)
+                                         {
+                                             return true;
+                                         }
+                                         else
+                                         {
+                                             return false;
+                                         }
+                                   },
                                     icon: "delete",
                                     callback: function( itemkey, opt, rootMenu, originalEvent)
                                     {
@@ -91,17 +149,26 @@ $(function() {
     //define the popup for adding a new artifact
     addEditArtifact = $("#addEditProperties").dialog({
         autoOpen: false,
-        height: 700,
+        height: 550,
         width:  700,
         modal: true,
-        buttons: {
-            "Save": function() {
-                saveArtifact();
-            },
-            Cancel: function() {
-                addEditArtifact.dialog("close");
-            }
-        }
+         buttons: [
+                {
+                    id: "btnSave",
+                    text: "Save",
+                    click: function() {
+                        saveArtifact();
+                    }
+                },
+                {
+                    id: "btnCancel",
+                    text: "Cancel",
+                    click: function() {
+                        addEditArtifact.dialog("close");
+                    }
+                }
+            ]
+
     });
 
     addTagType = $("#frmAddTagType").dialog({
@@ -134,18 +201,29 @@ $(function() {
         }
     });
 
-    //define the artifact search popup
-    searchArtifactDialog = $("#searchArtifact").dialog({
+    $( "#helpDialog" ).accordion({active: 1});
+    //define the popup the help
+    helpPopup = $("#helpDialog").dialog({
         autoOpen: false,
-        height: 700,
-        width:  600,
+        height: 600,
+        width:  400,
         modal: true,
         buttons: {
-            "Select": function() {
-                handleSelectParentArtifact();
-            },
             Cancel: function() {
-                searchArtifactDialog.dialog("close");
+                helpPopup.dialog("close");
+            }
+        }
+    });
+
+    //define the popup for errors
+    errorMsgPopup = $("#errorDialog").dialog({
+        autoOpen: false,
+        height: 300,
+        width:  500,
+        modal: true,
+        buttons: {
+            Cancel: function() {
+                errorMsgPopup.dialog("close");
             }
         }
     });

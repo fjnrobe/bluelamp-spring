@@ -22,6 +22,7 @@ public class Artifact {
     private String documentTitle;
     private String abbreviation;
     private String detailedText;
+    private String documentName;   //name of separate document stored in file storage
 
     @ManyToOne()
     @JoinColumn(name = "lov_document_type_id",
@@ -64,6 +65,14 @@ public class Artifact {
 
     public List<Tag> getTags() {
         return tags;
+    }
+
+    public String getDocumentName() {
+        return documentName;
+    }
+
+    public void setDocumentName(String documentName) {
+        this.documentName = documentName;
     }
 
     public void addTag(Tag newTag) {

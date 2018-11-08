@@ -1,6 +1,8 @@
 angular.module('bluelamp', [])
-.controller('baseController', ['$scope', 'Library', 'Lov', 'Tag',
-                                'Artifact', function($scope, Library, Lov, Tag, Artifact) {
+.controller('baseController', ['$scope', '$timeout', 'Library',
+                                'Lov', 'Tag','Artifact',
+                                function($scope, $timeout,
+                                 Library, Lov, Tag, Artifact) {
 
     var uiPageDtoTemplate = { pageDto : {id: -1, pageTitle: 'new page',
                                         pageDescription: 'a description for the page',
@@ -10,7 +12,7 @@ angular.module('bluelamp', [])
    	shapeRelationshipDtos: [],
    	predecessorPageDtos: []};
 
-    $scope.editPropertyTitle = "SET TITLE HERE";
+    $scope.editPropertyTitle = "";
     $scope.isArtifact = false;
     $scope.isShape = false;
     $scope.isPage = false;
@@ -26,7 +28,9 @@ angular.module('bluelamp', [])
     $scope.newTagTypeShortDesc = ""; //this is used when adding a new tag type
     $scope.newTagTypeLongDesc = ""; //this is used when adding a new tag type
 
-	$scope.annotation = {}; //{id: $scope.generateId(), annotationText: ""}
+	$scope.pageTitle = "";   //this is the bound field when editing a page
+	$scope.pageDescription = ""; //this is the bound field when editing a page
+	$scope.annotation = {}; //{id: $scope.generateId(), annotationText: "", sharedInd: false}
 	$scope.annotations = [];    //this is the list that is bound to the page when editing
 
     $scope.libraryList = []; //this will initially be the level 1 library entries only. This is the
@@ -57,6 +61,50 @@ angular.module('bluelamp', [])
     $scope.library1Description = "";
     $scope.library2Description = "";
     $scope.library3Description = "";
+
+    //see UserSecurityDto
+    $scope.userProfile = {};
+
+    $scope.getUserProfile = function()
+    {
+        return $scope.userProfile;
+    }
+
+//    $scope.uiPageDto = document.getElementById("uiPageDto").innerHTML;
+//    $scope.loadUserProfile = function()
+//    {
+//        Security.getCurrentUserProfile().then (function (response) {
+//
+//            if (response.status == "200")
+//            {
+//                $scope.userProfile = response.data;
+//            }
+//        });
+//    }
+
+    $scope.resetChangeTrigger = function()
+    {
+        $timeout(function(){
+            $scope.changes = false;
+        });
+    }
+
+    $scope.triggerChange = function()
+    {
+          $timeout(function(){
+              $scope.changes = true;
+          });
+    }
+
+    $scope.changeTriggered = function()
+    {
+          return $scope.changes;
+    }
+
+    $scope.navigateToPage = function(pageString)
+    {
+        window.location = pageString;
+    }
 
     $scope.navigateToDiagram = function(pPageId)
     {
@@ -91,6 +139,12 @@ angular.module('bluelamp', [])
          }
     }
 
+    //function to make a copy of the incoming object
+    $scope.clone = function(objectToClone)
+    {
+        return JSON.parse(JSON.stringify(objectToClone));
+    }
+
     //function to create an id for use as page id, shape id, connector id, etc
 	$scope.generateId = function() {
 		return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
@@ -116,24 +170,24 @@ angular.module('bluelamp', [])
     $scope.showHide = function(item)
     {
 
-       //default the item to highlight to the currently highlighted item
-       if ($scope.currentlySelectedLibraryId != null)
-       {
-           $scope.itemToHighLight =  $scope.currentlySelectedLibraryId;
-       }
-
-       //remove the highlight from all library items - we'll reselect the highlighted
-       //item at the bottom of this method
-       $(".libraryItem").removeClass("selected");
+//       //default the item to highlight to the currently highlighted item
+//       if ($scope.currentlySelectedLibraryId != null)
+//       {
+//           $scope.itemToHighLight =  $scope.currentlySelectedLibraryId;
+//       }
+//
+//       //remove the highlight from all library items - we'll reselect the highlighted
+//       //item at the bottom of this method
+//       $(".libraryItem").removeClass("selected");
 
         //we will return the selected library id
-       $scope.currentlySelectedLibraryId = null;
+       var selectedLibrary = null;
        $scope.currentlySelectLibraryItem = this;
 
 
         if (item.library3 != null)
         {
-            $scope.currentlySelectedLibraryId = item.library3.id;
+            selectedLibrary = item.library3.id;
             item.library3.isSelected = true;
             level3Clicked = true;
         }
@@ -148,7 +202,7 @@ angular.module('bluelamp', [])
                 if (!level2Clicked)
                 {
                     item.library1.expanded = !item.library1.expanded;
-                    $scope.currentlySelectedLibraryId = item.library1.id;
+                    selectedLibrary = item.library1.id;
                     //if the item was expanded - we need to load the children
                     if (item.library1.expanded)
                     {
@@ -183,7 +237,7 @@ angular.module('bluelamp', [])
                 {
                     item.library2.expanded = !item.library2.expanded;
                     //if the item was expanded - we need to load the children
-                    $scope.currentlySelectedLibraryId = item.library2.id;
+                    selectedLibrary = item.library2.id;
 
                     if (item.library2.expanded)
                     {
@@ -217,13 +271,14 @@ angular.module('bluelamp', [])
             }
         }
 
-        if ($scope.currentlySelectedLibraryId != null)
+        if (selectedLibrary != null)
         {
-            itemToHighLight = $scope.currentlySelectedLibraryId;
+            itemToHighLight = selectedLibrary;
+            $scope.currentlySelectedLibraryId = selectedLibrary;
         }
 
-        $("#"+ itemToHighLight).first().addClass("selected");
-//        angular.element("#" + itemToHighLight).addClass("selected");
+//        $("#"+ itemToHighLight).first().addClass("selected");
+        angular.element("#" + itemToHighLight).addClass("selected");
         return $scope.currentlySelectedLibraryId;
 
     }
@@ -478,7 +533,7 @@ angular.module('bluelamp', [])
     $scope.loadArtifactList = function(pSelectedLibraryId)
     {
         var libraryId = pSelectedLibraryId;
-
+        $scope.artifactList = [];
         if (libraryId != null)
         {
             Artifact.loadArtifacts(libraryId).then(function (response) {
@@ -489,10 +544,7 @@ angular.module('bluelamp', [])
                 else
                 {
                     $scope.artifactList = response.data;
-//                    if ($scope.selectedArtifact != null)
-//                    {
-//
-//                    }
+                    $scope.selectedArtifact = $scope.currentShape.properties.artifact;
                 }
             });
         }
@@ -574,9 +626,12 @@ angular.module('bluelamp', [])
     //pCurrentPage is a uiPageDto object
     $scope.setCurrentPage = function(pCurrentPage)
     {
-        $scope.$apply(function () {
             $scope.currentPage = pCurrentPage;
-        });
+    }
+
+    $scope.getCurrentPage = function()
+    {
+        return $scope.currentPage;
     }
 
     //this function is called when a user clicks to edit the page properties - it will bind the necessary parts of the pages's properties for page display
@@ -594,12 +649,15 @@ angular.module('bluelamp', [])
                 $scope.currentPage.pageDto.artifactId
             }
             $scope.initLibraryLists( $scope.currentPage.pageDto.libraryId);
-            $scope.annotations = $scope.currentPage.pageDto.annotationDtos;
-            $scope.tags = $scope.currentPage.pageDto.tagDtos;
-
-            $scope.editPropertyTitle = "Edit Page Properties";
+            $scope.annotation = {id: $scope.generateId(), annotationText: "", sharedInd: false};
+            $scope.annotations = $scope.clone($scope.currentPage.pageDto.annotationDtos);
+            $scope.tags = $scope.clone($scope.currentPage.pageDto.tagDtos);
+            $scope.pageTitle = $scope.currentPage.pageDto.pageTitle;
+            $scope.pageDescription = $scope.currentPage.pageDto.pageDescription;
             $scope.setEditType("page");
-            $scope.annotation = {id: $scope.generateId(), annotationText: ""};
+            $timeout(function(){
+                $scope.editPropertyTitle = "Edit Page Properties";
+            });
 
         });
     }
@@ -607,31 +665,38 @@ angular.module('bluelamp', [])
     //push the page changes to the currentPage Dto
 	$scope.savePageEdits = function()
 	{
-		$scope.currentPage.pageDto.tagDtos = $scope.tags;
-		$scope.currentPage.pageDto.annotationDtos = $scope.annotations;
+	    //force a refresh back to the html
+        //$scope.$apply(function () {
 
-         //the library associated with an artifact is the lowest selected level
-         if ($scope.selectedLibrary3.id != null)
-         {
-            $scope.currentPage.pageDto.libraryId = $scope.selectedLibrary3.id;
-         }
-         else if ($scope.selectedLibrary2.id != null)
-         {
-            $scope.currentPage.pageDto.libraryId = $scope.selectedLibrary2.id;
-         }
-         else
-         {
-           $scope.currentPage.pageDto.libraryId = $scope.selectedLibrary1.id;
-         }
+            $scope.triggerChange();
+            $scope.currentPage.pageDto.pageTitle = $scope.pageTitle;
+            $scope.currentPage.pageDto.pageDescription = $scope.pageDescription;
+            $scope.currentPage.pageDto.tagDtos = $scope.tags;
+            $scope.currentPage.pageDto.annotationDtos = $scope.annotations;
 
-		if ($scope.selectedArtifact == null)
-		{
-			$scope.currentPage.pageDto.artifactId = -1;
-		}
-		else
-		{
-			$scope.currentPage.pageDto.artifactId = $scope.selectedArtifact.referenceArtifactId;
-		}
+             //the library associated with an artifact is the lowest selected level
+             if ($scope.selectedLibrary3.id != null)
+             {
+                $scope.currentPage.pageDto.libraryId = $scope.selectedLibrary3.id;
+             }
+             else if ($scope.selectedLibrary2.id != null)
+             {
+                $scope.currentPage.pageDto.libraryId = $scope.selectedLibrary2.id;
+             }
+             else
+             {
+               $scope.currentPage.pageDto.libraryId = $scope.selectedLibrary1.id;
+             }
+
+            if ($scope.selectedArtifact == null)
+            {
+                $scope.currentPage.pageDto.artifactId = -1;
+            }
+            else
+            {
+                $scope.currentPage.pageDto.artifactId = $scope.selectedArtifact.referenceArtifactId;
+            }
+       // });
 	}
 
     //called when the user clicks the 'add' button on the edit artifact popup for a new annotation
@@ -641,7 +706,7 @@ angular.module('bluelamp', [])
 		{
 		    $scope.annotation.id =  $scope.generateId();
 			$scope.annotations.push($scope.annotation);
-			$scope.annotation = {id: $scope.generateId(), annotationText: ""};
+			$scope.annotation = {id: $scope.generateId(), annotationText: "", sharedInd: false};
 		}
 	}
 
@@ -665,11 +730,12 @@ angular.module('bluelamp', [])
 		{
 
 		    var newTagDto = {id: $scope.generateId(), tagValue: $scope.selectedTagValue,
-		        lovDto: $scope.selectedTagType};
+		        lovDto: $scope.selectedTagType, sharedInd: $scope.selectedTagShared};
 			$scope.tags.push(newTagDto);
 
 		    $scope.selectedTagType = {};
 		    $scope.selectedTagValue = "";
+		    $scope.selectedTagShared = false;
 		}
 	}
 
@@ -752,6 +818,12 @@ angular.module('bluelamp', [])
              });
 	    }
 	}
+
+    angular.element(document).ready(function () {
+            $scope.userProfile = JSON.parse(
+            document.getElementById("userProfile").innerHTML);
+
+    });
 
 }]);
 

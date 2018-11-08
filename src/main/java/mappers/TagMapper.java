@@ -10,11 +10,12 @@ import main.java.models.Tag;
  */
 public class TagMapper {
 
-    public static TagDto mapModelToDto(Tag tag) {
+    public static TagDto mapModelToDto(Tag tag, boolean sharedInd) {
         TagDto tagDto = new TagDto();
         tagDto.setTagValue(tag.getTagValue());
         tagDto.setId(tag.getId());
         tagDto.setLovDto(LovMapper.mapModelToDto(tag.getLovTagType()));
+        tagDto.setSharedInd(sharedInd);
 
         return tagDto;
     }

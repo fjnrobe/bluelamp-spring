@@ -59,7 +59,7 @@
         </div>
 
         <fieldset class="fieldSetStyle">
-            <legend>{{artifactGroupLabel}}</legend>
+
             <div class="form-group form-group-sm">
                 <label class="control-label col-sm-2" for="fldAILibrary1">Categorize: </label>
 
@@ -92,6 +92,16 @@
                             type="text"
                             readonly
                             value="{{library3Description}}"/>
+                </div>
+            </div>
+
+            <div class="form-group form-group-sm" >
+                <label class="control-label col-sm-2">Document: </label>
+                <div class="col-sm-6">
+                    <a class = "anchor"
+                       download="{{currentArtifact.documentName}}"
+                       href="/download/{{currentArtifact.id}}">{{currentArtifact.documentName}}
+                    </a>
                 </div>
             </div>
         </fieldset>

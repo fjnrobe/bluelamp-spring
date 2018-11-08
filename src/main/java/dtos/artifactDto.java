@@ -19,13 +19,34 @@ public class ArtifactDto {
     private String detailedText;
     private Lov documentType;
     private String libraryId;
-
+    private String documentName;
+    private String documentContent;
+    private String documentFileName;
+    private String libraryAncestry;  //populated when performing a library search
+                                     //is a string of the form Library/library/library
+                                     //indicating the parent library structure
     private List<TagDto> tagDtos = new ArrayList<TagDto>();
     private List<AnnotationDto> annotationDtos = new ArrayList<AnnotationDto>();
 
     public ArtifactDto()
     {
 
+    }
+
+    public String getDocumentName() {
+        return documentName;
+    }
+
+    public void setDocumentName(String documentName) {
+        this.documentName = documentName;
+    }
+
+    public String getDocumentContent() {
+        return documentContent;
+    }
+
+    public void setDocumentContent(String documentContent) {
+        this.documentContent = documentContent;
     }
 
     public String getId() {
@@ -91,5 +112,21 @@ public class ArtifactDto {
 
     public void setTagDtos(List<TagDto> tagDtos) {
         this.tagDtos = tagDtos;
+    }
+
+    public String getLibraryAncestry() {
+        return libraryAncestry;
+    }
+
+    public void setLibraryAncestry(String libraryAncestry) {
+        this.libraryAncestry = libraryAncestry;
+    }
+
+    public String getDocumentFileName() {
+        return documentFileName;
+    }
+
+    public void setDocumentFileName(String documentFileName) {
+        this.documentFileName = documentFileName;
     }
 }

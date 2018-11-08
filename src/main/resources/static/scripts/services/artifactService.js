@@ -50,13 +50,28 @@ angular.module('bluelamp')
                          return response;
                    });
              },
-             //load all diagrams associated with the incoming library id
-             //return structure is [pageDto]
-              searchArtifacts: function (searchText)
+              artifactSearch: function (searchText)
               {
 
-                var searchList = [];
-                return searchList;
+                return $http({
+                   method: 'GET',
+                   url: '/artifacts/library/search/' + searchText
+                 }).then(function successCallback(response) {
+                         return  response;
+                   }, function errorCallback(response) {
+                         return response;
+                   });
+              },
+              downloadArtifactDocument: function (artifactId)
+              {
+                return $http({
+                   method: 'GET',
+                   url: '/download'
+                 }).then(function successCallback(response) {
+                         return  response;
+                   }, function errorCallback(response) {
+                         return response;
+                   });
               }
 
         };

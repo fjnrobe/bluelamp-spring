@@ -7,6 +7,18 @@ public class AnnotationDto {
 
     private String id;
     private String annotationText;
+    //used with shared shapes - if true, the annotation is persisted
+    //with the template and visible to all shapes of the template type
+    //if false, then the annotation goes with the shape only
+    private boolean sharedInd;
+
+    public boolean isSharedInd() {
+        return sharedInd;
+    }
+
+    public void setSharedInd(boolean sharedInd) {
+        this.sharedInd = sharedInd;
+    }
 
     public String getId() {
         return id;

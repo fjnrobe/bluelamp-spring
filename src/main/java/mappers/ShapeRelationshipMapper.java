@@ -28,12 +28,12 @@ public class ShapeRelationshipMapper {
 
         for (Annotation annotation : relationship.getAnnotations())
         {
-            shapeRelationshipDto.getAnnotationDtos().add(AnnotationMapper.mapModelToDto(annotation));
+            shapeRelationshipDto.getAnnotationDtos().add(AnnotationMapper.mapModelToDto(annotation,false));
         }
 
         for (Tag tag : relationship.getTags())
         {
-            shapeRelationshipDto.getTagDtos().add(TagMapper.mapModelToDto(tag));
+            shapeRelationshipDto.getTagDtos().add(TagMapper.mapModelToDto(tag, false));
         }
 
         return shapeRelationshipDto;

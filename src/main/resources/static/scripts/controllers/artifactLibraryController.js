@@ -7,8 +7,9 @@ angular.module('bluelamp')
                                             'Lov', function($q,
                                                     $scope, $timeout, $controller, Library, Artifact, Tag, Lov) {
 
-    $scope.searchText = "";
-	$scope.matchingArtifactsList = []; //loaded if the user wants to create a drill down on a shape and opts to search for an existing page
+    $scope.currentlySelectedLibraryId = null;
+    $scope.artifactSearchText = "";
+    $scope.artifactFilterCriteria = "";
 	$scope.selectedArtifact = "";		//set to the page id of the selected diagram when setting up a drill down
 
     $scope.currentArtifact = {} //the artifact being added/edited. - artifactDto
@@ -18,7 +19,7 @@ angular.module('bluelamp')
                                  longName: "select document type"};
 
     $scope.parentArtifact = {}; //if a parent artifact is set when creating a new artifact
-
+    $scope.artifactGroupLabel = "Categorize";
     $scope.currentTags = [];
     //the selected tag/value
     $scope.selectedTagType = {};
@@ -27,46 +28,48 @@ angular.module('bluelamp')
     $scope.newDocTypeShortDesc = ""; //this is used when adding a new document type
     $scope.newDocTypeLongDesc = ""; //this is used when adding a new document type
 
+    $scope.showDocumentUpload = false;  //determines whether the file upload button should
+                                        //be displayed - for a new artifact or when
+                                        //changing a document on an existing artifact
+    $scope.popupErrors = [];
+
     //set a reference to the base controller
     $controller('baseController', { $scope: $scope });
+
+    $scope.setShowDocumentUpload = function(showIt)
+    {
+        $scope.showDocumentUpload = showIt;
+    }
 
     //invoked when the user clicks on a library level
     $scope.showHideArtifacts  = function(item)
     {
          //expand/collapse the library catalog
-        currentlySelectedLibraryId = $scope.showHide(item);
-        $scope.loadArtifactList(currentlySelectedLibraryId);
+        var selectedLibraryId = $scope.showHide(item);
+
+        if (selectedLibraryId != null)
+        {
+            $scope.currentlySelectedLibraryId = selectedLibraryId;
+
+            if (item.library3 != null)
+            {
+                $scope.artifactFilterCriteria = "library: (" + item.library3.description + ")";
+            }
+            else if (item.library2 != null)
+            {
+                $scope.artifactFilterCriteria = "library: (" + item.library2.description + ")";
+            }
+            else
+            {
+                $scope.artifactFilterCriteria = "library: (" + item.library1.description + ")";
+            }
+
+            $scope.loadArtifactList($scope.currentlySelectedLibraryId);
+
+        }
+
+
     }
-
-//    //when the user clicks the search button for a parent artifact
-//    $scope.openSearchDialog = function()
-//    {
-//        $scope.searchText = "";
-//        $scope.matchingArtifactsList = [];
-//        searchArtifactDialog.dialog("open");
-//    }
-
-//	//when the user clicks search on the 'search diagrams' popup
-//	$scope.searchArtifacts = function()
-//	{
-//		//the results will have a pageName (which must be unique across the system, and a library description which is the level 1, level 2, level 3 entry
-//		$scope.matchingArtifactsList = Artifact.searchArtifacts($scope.searchText);
-//    }
-
-//    //on the editConnector popup, when the user clicks on a diagram, this gets invoked
-//    $scope.setSelectedArtifact = function(row) {
-//
-//        $scope.selectedArtifact = row;
-//    }
-
-//    //if the user links the artifact to a parent -this is called when the save button is pressed.
-//    $scope.setParentArtifact = function()
-//    {
-//        $scope.$apply(function () {
-//            $scope.currentArtifact.parentArtifact = $scope.selectedArtifact;
-//        });
-//
-//    }
 
     //invoked when the user clicks the 'document type' link on the artifact popup to add a new document type
     $scope.openNewDocType = function()
@@ -102,12 +105,10 @@ angular.module('bluelamp')
         })
     }
 
-
-
     //when the user right-clicks on a library entry to add a new artifact
     $scope.createNewArtifact = function(pLibraryId)
     {
-        $scope.$apply(function() {
+       // $scope.$apply(function() {
             $scope.errors = [];
             $scope.annotation = {id: $scope.generateId(), annotationText: ""};
             $scope.annotations = [];
@@ -115,11 +116,14 @@ angular.module('bluelamp')
             $scope.currentArtifact = initArtifact();
             $scope.currentArtifact.libraryId = pLibraryId;
             $scope.initLibraryLists($scope.currentArtifact.libraryId);
-            $scope.editPropertyTitle = "Create New Artifact";
-            $scope.isArtifact = true;
-            addEditArtifact.dialog("open");
 
-        });
+            $scope.isArtifact = true;
+            $scope.showDocumentUpload = true;
+            addEditArtifact.dialog("open");
+            $timeout(function(){
+                $scope.editPropertyTitle = "Create New Artifact";
+            });
+      //  });
     }
 
     //when the user right-clicks to edit an existing artifact
@@ -138,7 +142,22 @@ angular.module('bluelamp')
                 $scope.initLibraryLists($scope.currentArtifact.libraryId);
                 $scope.annotations = $scope.currentArtifact.annotationDtos;
                 $scope.tags = $scope.currentArtifact.tagDtos;
+                $("#fileUpload").val('');
+                if ($scope.currentArtifact.documentName != null)
+                {
+                   $scope.showDocumentUpload = false;
+                }
+                else
+                {
+                    $scope.showDocumentUpload = true;
+                }
+
                 $scope.setEditType("artifact");
+                if ($scope.userProfile.editor == false)
+                {
+                    angular.element('.ui-dialog-buttonpane').find('button:first').css('visibility','hidden');
+
+                }
                 addEditArtifact.dialog("open");
             }
          });
@@ -154,6 +173,8 @@ angular.module('bluelamp')
               detailedText: "",
               documentType: $scope.defaultDocType,
               libraryId : "",
+              documentContent: null,
+              documentName: null,
               tagDtos: [],
               annotationDtos: []};
 
@@ -162,13 +183,12 @@ angular.module('bluelamp')
 
     $scope.deleteArtifact = function(artifactId)
     {
-         var refreshLibraryId = $scope.currentlySelectedLibraryId
+         var refreshLibraryId = $scope.currentlySelectedLibraryId;
          Artifact.deleteArtifact(artifactId).then(function (response) {
             if (response.status == "406")
             {
-//TODO: make a nicer error box at some point
-                alert(response.data);
-//                $scope.errors = response.data;
+                $scope.popupErrors = response.data;
+                errorMsgPopup.dialog("open");
             }
             else
             {
@@ -179,6 +199,17 @@ angular.module('bluelamp')
                 $scope.loadArtifactList(refreshLibraryId);
             }
          });
+    }
+
+    //function called when the user clicks on the 'remove' button in the addEditProperties.ftl
+    //when editing a document. this will remove the document from the artifact as well
+    //as set the showDocumentUpload to true to allow attaching a new document
+    $scope.removeDocument = function()
+    {
+        $scope.currentArtifact.documentContent = null;
+        //the document name will remain. on the back end, if there is a name but no
+        //content, then the system will purge the actual file
+        $scope.setShowDocumentUpload(true);
     }
 
     $scope.saveArtifact = function()
@@ -205,8 +236,41 @@ angular.module('bluelamp')
          $scope.currentArtifact.tagDtos = $scope.tags;
          $scope.currentArtifact.annotationDtos = $scope.annotations;
 
+         //the file upload is shown for new artifacts that can have a doc attached,
+         //or existing artifacts where the existing doc was removed/replaced by
+         //clicking on the replace button. Either way, if the upload input was
+         //shown, blank out the document name, which will trigger a delete on
+         //the backend if an existing file. if the file was replaced, it will
+         //be replaced below
+         if ($scope.showDocumentUpload)
+         {
+                $scope.currentArtifact.documentName = null;
+         }
 
-         var refreshLibraryId = $scope.currentlySelectedLibraryId
+         if (document.getElementById('fileUpload').files.length > 0)
+         {
+             var f = document.getElementById('fileUpload').files[0];
+             var r = new FileReader();
+
+             r.onload = function(event) {
+
+                $scope.currentArtifact.documentContent = event.target.result;
+                $scope.currentArtifact.documentName = f.name;
+
+                $scope.persistArtifact();
+             }
+             r.readAsDataURL(f);
+         }
+         else
+         {
+            $scope.persistArtifact();
+         }
+    }
+
+    $scope.persistArtifact= function() {
+
+         var refreshLibraryId = $scope.currentlySelectedLibraryId;
+
          $scope.$apply(function() {
 
              Artifact.saveArtifact($scope.currentArtifact).then (function (response) {
@@ -228,6 +292,23 @@ angular.module('bluelamp')
                 }
              });
          });
+    }
+
+    $scope.artifactSearch = function()
+    {
+        if ($scope.artifactSearchText != "")
+        {
+             Artifact.artifactSearch($scope.artifactSearchText).then(function (response) {
+                if (response.status == "406")
+                {
+                }
+                else
+                {
+                    $scope.artifactList = response.data;
+                    $scope.artifactFilterCriteria = "search by (" + $scope.artifactSearchText + ")";
+                }
+             });
+        }
     }
 
     $scope.loadLibrary();

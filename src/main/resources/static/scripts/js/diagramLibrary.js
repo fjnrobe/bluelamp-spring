@@ -21,11 +21,29 @@ function handleSelectDiagram()
     releasePen(getController().currentShape, 'handleSelectDiagram');
 }
 
+function openHelp(whichSection)
+{
+    helpPopup.dialog("open");
+
+}
+
+function saveNewTag()
+{
+    getController().saveNewTag();
+}
+
 $(function() {
 
     $.contextMenu({
         selector: '.libraryItem',
         autoHide: true,
+        events  : {
+                    show: function(options) {
+
+                        //don't create popup to create new artifacts unless the user has the EDITOR role
+                        return (getController().getUserProfile().editor == true);
+                    }
+                },
         items: {
             "newDiagram": {name: "Create New Diagram",
 
@@ -38,20 +56,47 @@ $(function() {
         }
     });
 
+    //configures the addEditProperties to be a 3 tabbed form
+    $( "#tabs" ).tabs({
+      active: 0
+    });
+
+    $("#txtSearch").keyup(function(event){
+        if(event.keyCode == 13){
+            $("#btnSearch").click();
+        }
+    });
+
     //define the popup for adding a new diagram
     newPageDiagram = $("#addEditProperties").dialog({
         autoOpen: false,
-        height: 700,
+        height: 550,
         width:  700,
         modal: true,
-        buttons: {
-            "Save": function() {
-                saveNewDiagram();
+        buttons: [
+            {
+                id: "btnSave",
+                text: "Save",
+                click: function() {
+                    saveNewDiagram();
+                }
             },
-            Cancel: function() {
-                newPageDiagram.dialog("close");
+            {
+                id: "btnCancel",
+                text: "Cancel",
+                click: function() {
+                    newPageDiagram.dialog("close");
+                }
             }
-        }
+        ]
+//        buttons: {
+//            "Save": function() {
+//                saveNewDiagram();
+//            },
+//            Cancel: function() {
+//                newPageDiagram.dialog("close");
+//            }
+//        }
     });
 
     //define the artifact info popup
@@ -79,6 +124,36 @@ $(function() {
             },
             Cancel: function() {
                 searchDiagramDialog.dialog("close");
+            }
+        }
+    });
+
+    addTagType = $("#frmAddTagType").dialog({
+        autoOpen: false,
+        height: 250,
+        width: 400,
+        modal: true,
+        buttons: {
+            "Save": function() {
+                saveNewTag();
+            },
+            Cancel: function() {
+                addTagType.dialog("close");
+            }
+        }
+    });
+
+     $( "#helpDialog" ).accordion({active: 2});
+
+    //define the popup the help
+    helpPopup = $("#helpDialog").dialog({
+        autoOpen: false,
+        height: 600,
+        width:  400,
+        modal: true,
+        buttons: {
+            Cancel: function() {
+                helpPopup.dialog("close");
             }
         }
     });

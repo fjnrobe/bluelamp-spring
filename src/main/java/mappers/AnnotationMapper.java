@@ -10,11 +10,12 @@ import main.java.models.Artifact;
  */
 public class AnnotationMapper {
 
-    public static AnnotationDto mapModelToDto(Annotation annotation)
+    public static AnnotationDto mapModelToDto(Annotation annotation, boolean sharedInd)
     {
         AnnotationDto annoAnnotationDto = new AnnotationDto();
         annoAnnotationDto.setId(annotation.getId());
         annoAnnotationDto.setAnnotationText(annotation.getAnnotationText());
+        annoAnnotationDto.setSharedInd(sharedInd);
 
         return annoAnnotationDto;
     }

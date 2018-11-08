@@ -20,7 +20,7 @@ public class Tag {
     @Id
     private String id;
 
-    //note - a tag could be applied to an artifact, shape, connection, page
+    //note - a tag could be applied to an artifact, shape, connection, page, or shapeTemplate
     @ManyToOne
     @JoinColumn(name = "lov_tag_type_id",
             foreignKey = @ForeignKey(name = "lov_tag_id_FK")
@@ -42,6 +42,10 @@ public class Tag {
     @ManyToOne
     @JoinColumn(name="shape_id", foreignKey = @ForeignKey(name="shape_id_fk"))
     private Shape shape;
+
+    @ManyToOne
+    @JoinColumn(name="shape_template_id", foreignKey = @ForeignKey(name="shape_template_id_fk"))
+    private ShapeTemplate shapeTemplate;
 
     @ManyToOne
     @JoinColumn(name="shape_relationship_id", foreignKey = @ForeignKey(name="shape_relationship_id_fk"))
@@ -132,5 +136,11 @@ public class Tag {
         this.relationship = relationship;
     }
 
+    public ShapeTemplate getShapeTemplate() {
+        return shapeTemplate;
+    }
 
+    public void setShapeTemplate(ShapeTemplate shapeTemplate) {
+        this.shapeTemplate = shapeTemplate;
+    }
 }

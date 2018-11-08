@@ -1,10 +1,11 @@
 angular.module('bluelamp' )
-.controller('diagramLibraryController', ['$q', '$scope', '$controller',
+.controller('diagramLibraryController', ['$q', '$scope', '$timeout', '$controller',
                     'Library', 'Diagram',
-            function($q, $scope, $controller, Library, Diagram) {
+            function($q, $scope, $timeout, $controller, Library, Diagram) {
 
     $scope.pageTitle = "";
     $scope.pageDescription = "";
+    $scope.diagramFilterCriteria = "";
     //the library will be loaded dynamically. Initially, only level 1 entries are loaded.
     //when the user clicks on a libary entry to expand, the code will make a call back to
     //retrieve the children of that library
@@ -14,31 +15,10 @@ angular.module('bluelamp' )
 
     $scope.diagramList = [];    //this will be loaded whenever user clicks on a library entry
 
-    $scope.searchText = "";
-	$scope.matchingDiagramsList = []; //loaded if the user wants to create a drill down on a shape and opts to search for an existing page
 	$scope.selectedDiagram = "";		//set to the page id of the selected diagram when setting up a drill down
 
     //set a reference to the base controller
     $controller('baseController', { $scope: $scope });
-
-//    //when the user clicks the search button on the diagram libary
-//    $scope.openSearchDialog = function()
-//    {
-//        $scope.searchText = "";
-//        searchDiagramDialog.dialog("open");
-//    }
-//
-//	//when the user clicks search on the 'search diagrams' popup
-//	$scope.searchDiagrams = function()
-//	{
-//		//need to invoke actual backend end point to get the diagrams that meet the search criteria- dummy results for now
-//		$scope.matchingDiagramsList = [];
-//
-//		//the results will have a pageName (which must be unique across the system, and a library description which is the level 1, level 2, level 3 entry
-//		$scope.matchingDiagramsList = [{pageId: 1, diagramTitle: "title one", diagramLibrary: "Health, CAPP STRS, Financials"},
-//							     {pageId: 2, diagramTitle: "title two", diagramLibrary: "Benefits, Forms"},
-//								 {pageId: 3, diagramTitle: "title three", diagramLibrary: "Contracts"}];
-//	}
 
     //on the editConnector popup, when the user clicks on a diagram, this gets invoked
     $scope.setSelectedDiagram = function(row) {
@@ -51,6 +31,22 @@ angular.module('bluelamp' )
     {
          //expand/collapse the library catalog
         currentlySelectedLibraryId = $scope.showHide(item);
+        if (currentlySelectedLibraryId != null)
+                {
+                    if (item.library3 != null)
+                    {
+                        $scope.diagramFilterCriteria = "library: (" + item.library3.description + ")";
+                    }
+                    else if (item.library2 != null)
+                    {
+                        $scope.diagramFilterCriteria = "library: (" + item.library2.description + ")";
+                    }
+                    else
+                    {
+                        $scope.diagramFilterCriteria = "library: (" + item.library1.description + ")";
+                    }
+
+                }
         loadDiagrams(currentlySelectedLibraryId);
     }
 
@@ -81,8 +77,11 @@ angular.module('bluelamp' )
         $scope.isPage = true;
         $scope.annotations = [];
         $scope.annotation = {id: $scope.generateId(), annotationText: ""};
-        $scope.editPropertyTitle = "Create Diagram";
+
         newPageDiagram.dialog("open");
+        $timeout(function(){
+            $scope.editPropertyTitle = "Create Diagram";
+        });
     }
 
     $scope.saveNewDiagram = function()
@@ -112,6 +111,23 @@ angular.module('bluelamp' )
          });
      });
 
+    }
+
+    $scope.diagramSearch = function()
+    {
+        if ($scope.diagramSearchText != "")
+        {
+             Diagram.diagramSearch($scope.diagramSearchText).then(function (response) {
+                if (response.status == "406")
+                {
+                }
+                else
+                {
+                    $scope.diagramList = response.data;
+                    $scope.diagramFilterCriteria = "search by (" + $scope.diagramSearchText + ")";
+                }
+             });
+        }
     }
 
     $scope.loadLibrary();

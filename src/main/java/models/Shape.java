@@ -42,6 +42,9 @@ public class Shape {
     private int centerY;
     private String shapeText;
     private String drillDownPageId;
+
+    private String templateId;
+
     @OneToMany(mappedBy = "shape",
             cascade = CascadeType.ALL,
             orphanRemoval = true)
@@ -226,6 +229,14 @@ public class Shape {
 
     public void setDiagram(Diagram diagram) {
         this.diagram = diagram;
+    }
+
+    public String getTemplateId() {
+        return templateId;
+    }
+
+    public void setTemplateId(String templateId) {
+        this.templateId = templateId;
     }
 
     public void addAnnotation(Annotation newAnnotation) {

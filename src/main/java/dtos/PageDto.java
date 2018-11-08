@@ -16,6 +16,9 @@ public class PageDto {
     private String artifactId;
     private List<TagDto> tagDtos = new ArrayList<TagDto>();
     private List<AnnotationDto> annotationDtos = new ArrayList<AnnotationDto>();
+    private String libraryAncestry;  //populated when performing a library search
+    //is a string of the form Library/library/library
+    //indicating the parent library structure
 
     public String getId() {
         return id;
@@ -71,5 +74,13 @@ public class PageDto {
 
     public void setAnnotationDtos(List<AnnotationDto> annotationDtos) {
         this.annotationDtos = annotationDtos;
+    }
+
+    public String getLibraryAncestry() {
+        return libraryAncestry;
+    }
+
+    public void setLibraryAncestry(String libraryAncestry) {
+        this.libraryAncestry = libraryAncestry;
     }
 }

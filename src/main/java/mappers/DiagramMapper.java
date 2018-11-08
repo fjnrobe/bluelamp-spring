@@ -27,12 +27,12 @@ public class DiagramMapper {
 
         for (Tag tag : diagram.getTags())
         {
-            pageDto.getTagDtos().add(TagMapper.mapModelToDto(tag));
+            pageDto.getTagDtos().add(TagMapper.mapModelToDto(tag,false));
         }
 
         for (Annotation annotation : diagram.getAnnotations())
         {
-            pageDto.getAnnotationDtos().add(AnnotationMapper.mapModelToDto(annotation));
+            pageDto.getAnnotationDtos().add(AnnotationMapper.mapModelToDto(annotation,false));
         }
 
         return pageDto;

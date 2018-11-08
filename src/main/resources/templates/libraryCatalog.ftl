@@ -20,11 +20,16 @@
       <script src="/scripts/services/libraryService.js"></script>
       <script src="/scripts/services/artifactService.js"></script>
       <script src="/scripts/controllers/libraryCatalogController.js"></script>
-
+      <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.9/css/all.css" integrity="sha384-5SOiIsAziJl6AWe0HWRKTXlfcSHKmYV4RBF18PPJ173Kzn7jzMyFuTtk8JA7QQG1" crossorigin="anonymous">
       <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
       <link rel="stylesheet" href="/scripts/vendor/jquery.contextMenu.css" />
       <link rel="stylesheet" href="/scripts/vendor/jquery-ui.css" />
       <link rel="stylesheet" href="/css/bluelamp.css" />
+      <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+      <script type="application/json" id="userProfile">
+          ${userProfile}
+      </script>
 
   </head>
   <body>
@@ -35,33 +40,42 @@
             <div class="panel-group">
                 <div class="panel panel-primary">
                     <div class="panel-heading">
-                        Library Catalog
+                        Library Catalog <a class="helplink" onClick="openHelp(1)">help <i class="fas fa-info"></i></a>
                     </div>
                     <div class="panel-body">
-
                         <div class="dataTables_scrollHeadInner">
-                            <button type="button" class="btn btn-primary" ng-click="writeLibrary()">Search</button>
-                            <ul>                                
+                            <ul>
                                 <li class="libraryHeader1 libraryItem"
                                     ng-repeat="library1 in libraryList"
                                     ng-click="showHide(this)"
+                                    id="{{library1.id}}"
                                     data-library-id="{{library1.id}}"
                                     data-library-level="{{library1.level}}">
+                                    <i class="fas fa-folder"
+                                       ng-show="!library1.expanded"></i>
+                                    <i class="far fa-folder-open"
+                                       ng-show="library1.expanded"></i>
                                         {{library1.description}} [{{library1.subLibraryList.length || library1.subLibraryCount }}]
-                                    <ul class="libraryHeader2" ng-hide="!library1.expanded" >
-                                        <li   class="libraryItem"
+                                    <ul  ng-hide="!library1.expanded" >
+                                        <li   class="libraryHeader2 libraryItem"
                                               ng-repeat="library2 in library1.subLibraryList"
                                               ng-click="showHide(this)"
+                                              id="{{library2.id}}"
                                               data-library-id="{{library2.id}}"
                                               data-library-level="{{library2.level}}">
+                                              <i class="fas fa-folder"
+                                               ng-show="!library2.expanded"></i>
+                                              <i class="far fa-folder-open"
+                                               ng-show="library2.expanded"></i>
                                                 {{library2.description}} [{{library2.subLibraryList.length || library2.subLibraryCount}}]
-                                            <ul class="libraryHeader3" ng-hide="!library2.expanded">
-                                                <li class="libraryItem"
+                                            <ul  ng-hide="!library2.expanded">
+                                                <li class="libraryItem libraryHeader3"
                                                     ng-repeat="library3 in library2.subLibraryList"
-                                                    ng-click="showHide(this)"
+                                                    ng-click="$event.stopPropagation();"
+                                                    id="{{library3.id}}"
                                                     data-library-id="{{library3.id}}"
                                                     data-library-level="{{library3.level}}">
-                                                    {{library3.description}} [{{library3.subLibraryList.length || library3.subLibraryCount}}]
+                                                    {{library3.description}}
                                                 </li>
                                             </ul>
                                         </li>
@@ -108,6 +122,42 @@
                            size="25">
                 </div>
             </div>
+            <div id="parentLibrary" ng-show="showMoveLibraryFields">
+                <div class="form-group form-group-sm">
+                    <div id="level0Library" ng-show="currentLibraryItem.level > 0">
+                        <label class="control-label col-sm-2" for="fldLibrary1">Move Under: </label>
+
+                        <div class="col-sm-5">
+
+                            <select id="fldLibrary1"
+                                    name="fldLibrary1"
+                                    class="form-control"
+                                    ng-model="selectedLibrary1"
+                                    ng-disabled="!userProfile.editor"
+                                    ng-options="library1.description for library1 in library1List track by library1.description"
+                                    ng-change="loadLibrary2List()">
+                            </select>
+
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group form-group-sm" ng-show="currentLibraryItem.level > 1">
+                    <div class="col-sm-2">
+                    </div>
+                    <div class="col-sm-5">
+                        <select id="fldLibrary2"
+                                name="fldLibrary2"
+                                class="form-control"
+                                ng-model="selectedLibrary2"
+                                ng-disabled="!userProfile.editor"
+                                ng-options="library2.description for library2 in library2List track by library2.description"
+                                ng-change="loadLibrary3List()">
+                        </select>
+                    </div>
+                </div>
+            </div>
         </form>
+
+        <#include "/includes/helpDialog.ftl" />
     </div>
   </body>

@@ -29,11 +29,24 @@
         }
     }
 
+    function openHelp(whichSection)
+    {
+        helpPopup.dialog("open");
+
+    }
+
      $(function() {
 
         $.contextMenu({
             selector: '.libraryItem',
             autoHide: true,
+             events  : {
+                        show: function(options) {
+
+                            //don't create popup to create new artifacts unless the user has the EDITOR role
+                            return (getController().getUserProfile().editor == true);
+                        }
+                    },
             items: {
                 "addNewSibling": {name: "Add New - This Level",
 
@@ -47,7 +60,9 @@
 
                             visible: function( key, opt)
                             {
-                                if (this[0].attributes['data-library-level'].value < 2)
+                                //don't allow sub-categories to the 'unassigned library (-99)
+                                if (( this[0].attributes['data-library-level'].value < 2) &&
+                                    ( this[0].attributes['data-library-id'].value != -99 ) )
                                 {
                                     return true;
                                 }
@@ -94,7 +109,7 @@
         //define the popup for adding a new library
         newLibrary = $("#newLibrary").dialog({
             autoOpen: false,
-            height: 250,
+            height: 300,
             width:  700,
             modal: true,
             buttons: {
@@ -107,4 +122,20 @@
                 }
             }
         });
+
+        $( "#helpDialog" ).accordion({active: 0});
+
+        //define the popup the help
+        helpPopup = $("#helpDialog").dialog({
+            autoOpen: false,
+            height: 600,
+            width:  400,
+            modal: true,
+            buttons: {
+                Cancel: function() {
+                    helpPopup.dialog("close");
+                }
+            }
+        });
+
     });
